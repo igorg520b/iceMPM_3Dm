@@ -12,7 +12,7 @@
 #include <utility>
 
 
-void icy::SnapshotManager::LoadRawPoints(std::string fileName)
+void SnapshotManager::LoadRawPoints(std::string fileName)
 {
     spdlog::info("reading raw points file {}",fileName);
     if(!std::filesystem::exists(fileName)) throw std::runtime_error("error reading raw points file - no file");;
@@ -94,11 +94,11 @@ void icy::SnapshotManager::LoadRawPoints(std::string fileName)
     spdlog::info("LoadRawPoints done; nPoitns {}",nPoints);
 }
 
-
+/*
 
 void icy::SnapshotManager::SavePQ(std::string outputDirectory)
 {
-    /*
+
     std::filesystem::path odp(outputDirectory);
     if(!std::filesystem::is_directory(odp) || !std::filesystem::exists(odp)) std::filesystem::create_directory(odp);
     std::filesystem::path odp2(outputDirectory+"/"+directory_pq);
@@ -139,14 +139,14 @@ void icy::SnapshotManager::SavePQ(std::string outputDirectory)
 
     dataset_pq_crushed.write(buffer1.data(), H5::PredType::NATIVE_DOUBLE);
     file.close();
-*/
+
 }
 
 
 
 void icy::SnapshotManager::SaveSnapshot(std::string outputDirectory)
 {
-    /*
+
     std::filesystem::path odp(outputDirectory);
     if(!std::filesystem::is_directory(odp) || !std::filesystem::exists(odp)) std::filesystem::create_directory(odp);
     std::filesystem::path odp2(outputDirectory+"/"+directory_snapshots);
@@ -191,12 +191,11 @@ void icy::SnapshotManager::SaveSnapshot(std::string outputDirectory)
 //    H5::Attribute att = dataset_points.createAttribute("full_data", H5::PredType::NATIVE_INT,att_dspace);
 //    att.write(H5::PredType::NATIVE_INT, &full_data);
 
-*/
+
 }
 
 void icy::SnapshotManager::SaveParametersAsAttributes(H5::DataSet &dataset)
 {
-    /*
     hsize_t att_dim = 1;
     H5::DataSpace att_dspace(1, &att_dim);
     H5::Attribute att_indenter_x = dataset.createAttribute("indenter_x", H5::PredType::NATIVE_DOUBLE, att_dspace);
@@ -230,7 +229,6 @@ void icy::SnapshotManager::SaveParametersAsAttributes(H5::DataSet &dataset)
     att_InitialTimeStep.write(H5::PredType::NATIVE_DOUBLE, &model->prms.InitialTimeStep);
     att_SetupType.write(H5::PredType::NATIVE_INT, &model->prms.SetupType);
     att_Volume.write(H5::PredType::NATIVE_DOUBLE, &model->prms.Volume);
-*/
 }
 
 
@@ -238,7 +236,6 @@ void icy::SnapshotManager::SaveParametersAsAttributes(H5::DataSet &dataset)
 
 void icy::SnapshotManager::ReadSnapshot(std::string fileName)
 {
-    /*
     if(!std::filesystem::exists(fileName)) return -1;
 
     std::string numbers = fileName.substr(fileName.length()-8,5);
@@ -272,7 +269,7 @@ void icy::SnapshotManager::ReadSnapshot(std::string fileName)
 
     model->gpu.transfer_ponts_to_host_finalize(model->points);
     file.close();
-    return idx;*/
+    return idx;
 }
-
+*/
 

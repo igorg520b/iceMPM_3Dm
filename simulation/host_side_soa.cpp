@@ -30,7 +30,7 @@ void HostSideSOA::offsetBlock(Eigen::Vector3d offset)
     }
 }
 
-void HostSideSOA::RemoveDisabledAndSort(double hinv, int GridY)
+void HostSideSOA::RemoveDisabledAndSort(double hinv, int GridY, int GridZ)
 {
     spdlog::info("RemoveDisabledAndSort; nPtsArrays {}", SimParams3D::nPtsArrays);
     unsigned size_before = size;
@@ -38,8 +38,8 @@ void HostSideSOA::RemoveDisabledAndSort(double hinv, int GridY)
     size = it_result.m_point.pos;
     spdlog::info("RemoveDisabledAndSort: {} removed; new size {}", size_before-size, size);
     std::sort(begin(), end(),
-              [&hinv,&GridY](ProxyPoint &p1, ProxyPoint &p2)
-              {return p1.getCellIndex(hinv,GridY)<p2.getCellIndex(hinv,GridY);});
+              [&hinv,&GridY](ProxyPoint3D &p1, ProxyPoint3D &p2)
+              {return p1.getCellIndex(hinv,GridY,GridZ)<p2.getCellIndex(hinv,GridY,GridZ);});
     spdlog::info("RemoveDisabledAndSort done");
 }
 
@@ -48,7 +48,7 @@ void HostSideSOA::Allocate(unsigned capacity)
 {
     cudaFreeHost(host_buffer);
     this->capacity = capacity;
-    size_t allocation_size = sizeof(double)*capacity*icy::SimParams::nPtsArrays;
+    size_t allocation_size = sizeof(double)*capacity*SimParams3D::nPtsArrays;
     cudaError_t err = cudaMallocHost(&host_buffer, allocation_size);
     if(err != cudaSuccess)
     {
@@ -76,21 +76,18 @@ unsigned HostSideSOA::FindFirstPointAtGridXIndex(const int index_grid_x, const d
 
 void HostSideSOA::InitializeBlock()
 {
-    Eigen::Matrix2d identity = Eigen::Matrix2d::Identity();
     for(SOAIterator it = begin(); it!=end(); ++it)
     {
         ProxyPoint &p = *it;
-        p.setValue(icy::SimParams::idx_Jp_inv,1);
-        for(int i=0; i<icy::SimParams::dim; i++)
-            for(int j=0; j<icy::SimParams::dim; j++)
-                p.setValue(icy::SimParams::Fe00+i*2+j, identity(i,j));
+        p.setValue(SimParams3D::idx_Jp_inv,1);
+        for(int i=0; i<SimParams3D::dim; i++)
+                p.setValue(icy::SimParams::Fe00+i*3+i, 1.0);
     }
-
 }
 
 
 // ====================================================== ProxyPoint
-ProxyPoint::ProxyPoint(const ProxyPoint &other)
+ProxyPoint3D::ProxyPoint3D(const ProxyPoint3D &other)
 {
     isReference = false;
     // local copy
@@ -104,7 +101,7 @@ ProxyPoint::ProxyPoint(const ProxyPoint &other)
     }
 }
 
-ProxyPoint& ProxyPoint::operator=(const ProxyPoint &other)
+ProxyPoint3D& ProxyPoint3D::operator=(const ProxyPoint3D &other)
 {
     if(isReference)
     {
@@ -149,7 +146,7 @@ Eigen::Vector3d ProxyPoint3D::getPos() const
     return result;
 }
 
-double ProxyPoint::getValue(size_t valueIdx) const
+double ProxyPoint3D::getValue(size_t valueIdx) const
 {
     if(isReference)
         return soa[pos + pitch*valueIdx];
@@ -158,7 +155,7 @@ double ProxyPoint::getValue(size_t valueIdx) const
 }
 
 
-void ProxyPoint::setValue(size_t valueIdx, double value)
+void ProxyPoint3D::setValue(size_t valueIdx, double value)
 {
     if(isReference)
         soa[pos + pitch*valueIdx] = value;
@@ -167,18 +164,10 @@ void ProxyPoint::setValue(size_t valueIdx, double value)
 }
 
 
-void ProxyPoint::setPartition(uint8_t PartitionID)
+void ProxyPoint3D::setPartition(uint8_t PartitionID)
 {
     // retrieve the existing value
-    double dval;
-    if(isReference)
-    {
-        dval = soa[pos + pitch*icy::SimParams::idx_utility_data];
-    }
-    else
-    {
-        dval = data[icy::SimParams::idx_utility_data];
-    }
+    double dval = getValue(SimParams3D::idx_utility_data);
     long long val = *reinterpret_cast<long long*>(&dval);
 
     long long _pid = (long long)PartitionID;
@@ -189,11 +178,11 @@ void ProxyPoint::setPartition(uint8_t PartitionID)
     long long *ptr;
     if(isReference)
     {
-        ptr = (long long*)&soa[pos + pitch*icy::SimParams::idx_utility_data];
+        ptr = (long long*)&soa[pos + pitch*SimParams3D::idx_utility_data];
     }
     else
     {
-        ptr = (long long*)&data[icy::SimParams::idx_utility_data];
+        ptr = (long long*)&data[SimParams3D::idx_utility_data];
     }
     *ptr = val;
 }

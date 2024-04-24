@@ -3,7 +3,7 @@
 
 //#include "givens.cuh"
 
-#include "parameters_sim_3d.h"
+//#include "parameters_sim_3d.h"
 
 
 

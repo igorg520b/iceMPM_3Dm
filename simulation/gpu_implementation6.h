@@ -27,7 +27,7 @@ public:
     Model3D *model;
     std::vector<GPU_Partition_3D> partitions;
     HostSideSOA hssoa;
-    Eigen::Vector2d indenter_force;
+    Eigen::Vector3d indenter_force;
 
     std::function<void()> transfer_completion_callback;
 

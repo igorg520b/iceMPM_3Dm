@@ -58,7 +58,7 @@ public:
     double IndDiameter, IndRSq, IndVelocity, IndDepth;
 
     double cellsize, cellsize_inv, Dp_inv;
-    double xmin, xmax, ymin, ymax;            // bounding box of the material
+    double xmin, xmax, ymin, ymax, zmin, zmax;            // bounding box of the material
 
     double ParticleVolume, ParticleMass, ParticleViewSize;
 

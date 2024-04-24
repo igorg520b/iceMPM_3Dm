@@ -22,8 +22,6 @@ Model3D::Model3D()
     spdlog::info("Model constructor");
 }
 
-Model3D::~Model3D() {}
-
 bool Model3D::Step()
 {
     double simulation_time = prms.SimulationTime;

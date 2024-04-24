@@ -31,7 +31,7 @@ class Model3D
 {
 public:
     Model3D();
-    ~Model3D();
+    ~Model3D() {};
     void Reset();
 
     void Prepare();        // invoked once, at simulation start
@@ -43,7 +43,7 @@ public:
     SimParams3D prms;
     GPU_Implementation6 gpu;
     int max_points_transferred, max_pt_deviation;
-    bool SyncTopologyRequired;
+    bool SyncTopologyRequired;  // only for GUI visualization
 
     std::mutex processing_current_cycle_data; // locked until the current cycle results' are copied to host and processed
     std::mutex accessing_point_data;

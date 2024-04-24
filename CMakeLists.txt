@@ -55,6 +55,7 @@ add_executable(cm3
     # serializing
     simulation/snapshotmanager.h
     simulation/snapshotmanager.cpp
+    simulation/mpm_kernels.cuh
 )
 
 

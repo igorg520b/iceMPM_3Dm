@@ -54,19 +54,15 @@ __device__ void PreparePointForTransfer(const int pt_idx, const int index_in_tra
                                         const double *buffer_pts);
 
 
-__device__ Eigen::Matrix2d polar_decomp_R(const Eigen::Matrix2d &val);
-__device__ void svd(const double a[4], double u[4], double sigma[2], double v[4]);
-__device__ void svd2x2(const Eigen::Matrix2d &mA, Eigen::Matrix2d &mU, Eigen::Vector2d &mS, Eigen::Matrix2d &mV);
-
 __device__ void Wolper_Drucker_Prager(icy::Point &p);
 __device__ void CheckIfPointIsInsideFailureSurface(icy::Point &p);
-__device__ Eigen::Matrix2d KirchhoffStress_Wolper(const Eigen::Matrix2d &F);
+//__device__ Eigen::Matrix2d KirchhoffStress_Wolper(const Eigen::Matrix2d &F);
 
 __device__ void ComputePQ(icy::Point &p, const double &kappa, const double &mu);
 __device__ void GetParametersForGrain(short grain, double &pmin, double &pmax, double &qmax, double &beta, double &mSq, double &pmin2);
 
-__device__ Eigen::Vector2d dev_d(Eigen::Vector2d Adiag);
-__device__ Eigen::Matrix2d dev(Eigen::Matrix2d A);
+__device__ Eigen::Vector3d dev_d(Eigen::Vector3d Adiag);
+__device__ Eigen::Matrix3d dev(Eigen::Matrix3d A);
 
 
 struct GPU_Partition_3D

@@ -9,21 +9,20 @@
 #include <cxxopts.hpp>
 #include <spdlog/spdlog.h>
 
-#include "model.h"
+#include "model_3d.h"
 #include "snapshotmanager.h"
-#include "gpu_partition.h"
 
 
 
 int main(int argc, char** argv)
 {
-    icy::Model model;
-    icy::SnapshotManager snapshot;
+    Model3D model;
+    SnapshotManager snapshot;
+
     std::string snapshot_directory = "cm_snapshots";
     std::thread snapshot_thread;
     std::atomic<bool> request_terminate = false;
     std::atomic<bool> request_full_snapshot = false;
-
 
     // initialize the model
 
@@ -35,12 +34,18 @@ int main(int argc, char** argv)
 
     options.add_options()
         ("file", "Configuration file", cxxopts::value<std::string>())
+        ("s,start", "Only write the starting snapshot", cxxopts::value<bool>()->default_value("false"))
+        ("r,resume", "Resume from a full snapshot (.h5) file", cxxopts::value<std::string>())
         ;
     options.parse_positional({"file"});
 
     auto option_parse_result = options.parse(argc, argv);
 
-    if(option_parse_result.count("file"))
+    if(option_parse_result.count("resume"))
+    {
+        // resume from snapshot
+    }
+    else if(option_parse_result.count("file"))
     {
         std::string params_file = option_parse_result["file"].as<std::string>();
         std::string pointCloudFile = model.prms.ParseFile(params_file);
@@ -48,6 +53,14 @@ int main(int argc, char** argv)
     }
 
 
+    if(option_parse_result.count("start"))
+    {
+        // only generate the starting snapshot
+        // write a snapshot and return
+    }
+
+
+/*
     model.gpu.transfer_completion_callback = [&](){
         if(snapshot_thread.joinable()) snapshot_thread.join();
         snapshot_thread = std::thread([&](){
@@ -93,7 +106,7 @@ int main(int argc, char** argv)
     simulation_thread.join();
     model.gpu.synchronize();
     snapshot_thread.join();
-
+*/
     std::cout << "cm done\n";
 
     return 0;
