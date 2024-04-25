@@ -44,6 +44,8 @@ add_executable(cm3
     simulation/point_3d.cpp
     simulation/host_side_soa.h
     simulation/host_side_soa.cpp
+    simulation/proxypoint3d.h
+    simulation/proxypoint3d.cpp
 
     # cuda
     simulation/helper_math.cuh
@@ -51,11 +53,11 @@ add_executable(cm3
     simulation/gpu_implementation6.cpp
     simulation/gpu_partition_3d.h
     simulation/gpu_partition_3d.cu
+    simulation/mpm_kernels.cuh
 
     # serializing
     simulation/snapshotmanager.h
     simulation/snapshotmanager.cpp
-    simulation/mpm_kernels.cuh
 )
 
 

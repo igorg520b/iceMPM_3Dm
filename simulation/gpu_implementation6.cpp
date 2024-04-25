@@ -1,7 +1,7 @@
-#include "gpu_implementation5.h"
-#include "parameters_sim.h"
-#include "point.h"
-#include "model.h"
+#include "gpu_implementation6.h"
+#include "parameters_sim_3d.h"
+#include "point_3d.h"
+#include "model_3d.h"
 
 #include <iostream>
 #include <vector>
@@ -15,10 +15,10 @@
 using namespace Eigen;
 
 
-void GPU_Implementation5::reset_grid()
+void GPU_Implementation6::reset_grid()
 {
     cudaError_t err;
-    for(GPU_Partition &p : partitions)
+    for(GPU_Partition_3D &p : partitions)
     {
         err = cudaSetDevice(p.Device);
         if(err != cudaSuccess) throw std::runtime_error("reset_grid set device");
@@ -28,29 +28,30 @@ void GPU_Implementation5::reset_grid()
     }
 }
 
-void GPU_Implementation5::p2g()
+void GPU_Implementation6::p2g()
 {
     cudaError_t err;
     const int &halo = model->prms.GridHaloSize;
     const int &gridY = model->prms.GridY;
+    const int &gridZ = model->prms.GridZ;
     const int &gridXT = model->prms.GridXTotal;
     const int &offset = model->prms.gbOffset;
 
 
     for(int i=0;i<partitions.size();i++)
     {
-        GPU_Partition &p = partitions[i];
+        GPU_Partition_3D &p = partitions[i];
         p.p2g();    // invoke the P2G kernel
 
         if(i!=0)
         {
             // send halo to the left
-            GPU_Partition &pprev = partitions[i-1];
-            for(int j=0;j<icy::SimParams::nGridArrays;j++)
+            GPU_Partition_3D &pprev = partitions[i-1];
+            for(int j=0;j<SimParams3D::nGridArrays;j++)
             {
                 double *src = p.grid_array + j*p.nGridPitch;
                 double *dst = pprev.halo_transfer_buffer[1] + j*pprev.nGridPitch;
-                const size_t halo_count = sizeof(double)*gridY*halo*2;
+                const size_t halo_count = sizeof(double)*gridY*gridZ*halo*2;
                 err = cudaMemcpyPeerAsync(dst, pprev.Device, src, p.Device, halo_count, p.streamCompute);
             }
             if(err != cudaSuccess) throw std::runtime_error("p2g cudaMemcpyPeerAsync");
@@ -60,12 +61,12 @@ void GPU_Implementation5::p2g()
         {
             // send halo to the right
 
-            GPU_Partition &pnxt = partitions[i+1];
-            for(int j=0;j<icy::SimParams::nGridArrays;j++)
+            GPU_Partition_3D &pnxt = partitions[i+1];
+            for(int j=0;j<SimParams3D::nGridArrays;j++)
             {
-                double *src = p.grid_array + j*p.nGridPitch + gridY*(p.GridX_partition);
+                double *src = p.grid_array + j*p.nGridPitch + gridZ*gridY*(p.GridX_partition);
                 double *dst = pnxt.halo_transfer_buffer[0] + j*pnxt.nGridPitch;
-                const size_t halo_count = sizeof(double)*gridY*halo*2;
+                const size_t halo_count = sizeof(double)*gridY*gridZ*halo*2;
                 err = cudaMemcpyPeerAsync(dst, pnxt.Device, src, p.Device, halo_count, p.streamCompute);
             }
             if(err != cudaSuccess) throw std::runtime_error("p2g cudaMemcpyPeerAsync");
@@ -77,11 +78,11 @@ void GPU_Implementation5::p2g()
 }
 
 
-void GPU_Implementation5::receive_halos()
+void GPU_Implementation6::receive_halos()
 {
     if(partitions.size() == 1)
     {
-        GPU_Partition &p = partitions.front();
+        GPU_Partition_3D &p = partitions.front();
         cudaError_t err = cudaEventRecord(p.event_30_halo_accepted, p.streamCompute);
         if(err != cudaSuccess) throw std::runtime_error("receive_halos event");
         return;
@@ -90,17 +91,17 @@ void GPU_Implementation5::receive_halos()
     cudaError_t err;
     for(int i=0;i<partitions.size();i++)
     {
-        GPU_Partition &p = partitions[i];
+        GPU_Partition_3D &p = partitions[i];
         cudaSetDevice(p.Device);
         if(i!=0)
         {
-            GPU_Partition &pprev = partitions[i-1];
+            GPU_Partition_3D &pprev = partitions[i-1];
             err = cudaStreamWaitEvent(p.streamCompute, pprev.event_20_grid_halo_sent);
             if(err != cudaSuccess) throw std::runtime_error("receive_halos waiting on event");
         }
         if(i!=partitions.size()-1)
         {
-            GPU_Partition &pnxt = partitions[i+1];
+            GPU_Partition_3D &pnxt = partitions[i+1];
             err = cudaStreamWaitEvent(p.streamCompute, pnxt.event_20_grid_halo_sent);
             if(err != cudaSuccess) throw std::runtime_error("receive_halos waiting on event");
         }
@@ -112,9 +113,9 @@ void GPU_Implementation5::receive_halos()
 }
 
 
-void GPU_Implementation5::update_nodes()
+void GPU_Implementation6::update_nodes()
 {
-    for(GPU_Partition &p : partitions)
+    for(GPU_Partition_3D &p : partitions)
     {
         p.update_nodes();
         cudaError_t err = cudaEventRecord(p.event_40_grid_updated, p.streamCompute);
@@ -122,9 +123,9 @@ void GPU_Implementation5::update_nodes()
     }
 }
 
-void GPU_Implementation5::g2p(const bool recordPQ, const bool enablePointTransfer)
+void GPU_Implementation6::g2p(const bool recordPQ, const bool enablePointTransfer)
 {
-    for(GPU_Partition &p : partitions)
+    for(GPU_Partition_3D &p : partitions)
     {
         p.g2p(recordPQ, enablePointTransfer);
         cudaError_t err = cudaEventRecord(p.event_50_g2p_completed, p.streamCompute);
@@ -132,12 +133,12 @@ void GPU_Implementation5::g2p(const bool recordPQ, const bool enablePointTransfe
     }
 }
 
-void GPU_Implementation5::receive_points()
+void GPU_Implementation6::receive_points()
 {
     cudaError_t err;
     for(int i=0;i<partitions.size();i++)
     {
-        GPU_Partition &p = partitions[i];
+        GPU_Partition_3D &p = partitions[i];
         err = cudaSetDevice(p.Device);
         if(err != cudaSuccess) throw std::runtime_error("RP cudaSetDevice");
 
@@ -149,11 +150,11 @@ void GPU_Implementation5::receive_points()
         if(i!=(partitions.size()-1))
         {
             // send buffer to the right
-            GPU_Partition &pnxt = partitions[i+1];
+            GPU_Partition_3D &pnxt = partitions[i+1];
             double *src_point_buffer = p.point_transfer_buffer[1];
             double *dst_point_buffer = pnxt.point_transfer_buffer[2];
             int right_buffer_count = p.getRightBufferCount();
-            size_t count = right_buffer_count*sizeof(double)*icy::SimParams::nPtsArrays;
+            size_t count = right_buffer_count*sizeof(double)*SimParams3D::nPtsArrays;
             if(count != 0)
             {
                 err = cudaMemcpyPeerAsync(dst_point_buffer, pnxt.Device, src_point_buffer, p.Device, count, p.streamCompute);
@@ -163,11 +164,11 @@ void GPU_Implementation5::receive_points()
         if(i!=0)
         {
             // send buffer to the right
-            GPU_Partition &pprev = partitions[i-1];
+            GPU_Partition_3D &pprev = partitions[i-1];
             double *src_point_buffer = p.point_transfer_buffer[0];
             double *dst_point_buffer = pprev.point_transfer_buffer[3];
             int left_buffer_count = p.getLeftBufferCount();
-            size_t count = left_buffer_count*sizeof(double)*icy::SimParams::nPtsArrays;
+            size_t count = left_buffer_count*sizeof(double)*SimParams3D::nPtsArrays;
             if(count != 0)
             {
                 err = cudaMemcpyPeerAsync(dst_point_buffer, pprev.Device, src_point_buffer, p.Device, count, p.streamCompute);
@@ -180,7 +181,7 @@ void GPU_Implementation5::receive_points()
 
     for(int i=0;i<partitions.size();i++)
     {
-        GPU_Partition &p = partitions[i];
+        GPU_Partition_3D &p = partitions[i];
         cudaSetDevice(p.Device);
         int left=0, right=0;
         if(i!=0)
@@ -192,7 +193,7 @@ void GPU_Implementation5::receive_points()
         }
         if(i!=partitions.size()-1)
         {
-            GPU_Partition &pnxt = partitions[i+1];
+            GPU_Partition_3D &pnxt = partitions[i+1];
             err = cudaStreamWaitEvent(p.streamCompute, partitions[i+1].event_70_pts_sent);
             if(err != cudaSuccess) throw std::runtime_error("RP wait event");
             right = pnxt.getLeftBufferCount();
@@ -203,12 +204,9 @@ void GPU_Implementation5::receive_points()
     }
 }
 
-
-
-
-void GPU_Implementation5::record_timings(const bool enablePointTransfer)
+void GPU_Implementation6::record_timings(const bool enablePointTransfer)
 {
-    for(GPU_Partition &p : partitions) p.record_timings(enablePointTransfer);
+    for(GPU_Partition_3D &p : partitions) p.record_timings(enablePointTransfer);
 }
 
 
@@ -218,7 +216,7 @@ void GPU_Implementation5::record_timings(const bool enablePointTransfer)
 
 
 
-void GPU_Implementation5::initialize_and_enable_peer_access()
+void GPU_Implementation6::initialize_and_enable_peer_access()
 {
     const int &nPartitions = model->prms.nPartitions;
 
@@ -233,7 +231,7 @@ void GPU_Implementation5::initialize_and_enable_peer_access()
 
     for(int i=0;i<nPartitions;i++)
     {
-        GPU_Partition &p = partitions[i];
+        GPU_Partition_3D &p = partitions[i];
         p.initialize(i%deviceCount, i);
     }
 
@@ -281,7 +279,7 @@ void GPU_Implementation5::initialize_and_enable_peer_access()
 }
 
 
-void GPU_Implementation5::split_hssoa_into_partitions()
+void GPU_Implementation6::split_hssoa_into_partitions()
 {
     spdlog::info("split_hssoa_into_partitions() start");
     const double &hinv = model->prms.cellsize_inv;
@@ -293,7 +291,7 @@ void GPU_Implementation5::split_hssoa_into_partitions()
 
     for(int i=0;i<nPartitions;i++)
     {
-        GPU_Partition &p = partitions[i];
+        GPU_Partition_3D &p = partitions[i];
         p.nPts_disabled = 0;
         const int nPartitionsRemaining = nPartitions - i;
         p.nPts_partition = (hssoa.size - nPointsProcessed)/nPartitionsRemaining; // points in this partition
@@ -326,7 +324,7 @@ void GPU_Implementation5::split_hssoa_into_partitions()
 }
 
 
-void GPU_Implementation5::allocate_arrays()
+void GPU_Implementation6::allocate_arrays()
 {
     cudaError_t err;
     const unsigned &nPts = model->prms.nPtsTotal;
@@ -338,16 +336,15 @@ void GPU_Implementation5::allocate_arrays()
     int GridX_size = std::min(max_GridX_size*2, model->prms.GridXTotal);
 
     const unsigned points_requested_per_partition = (nPts/partitions.size()) * (1 + model->prms.ExtraSpaceForIncomingPoints);
-    for(GPU_Partition &p : partitions) p.allocate(points_requested_per_partition, GridX_size);
+    for(GPU_Partition_3D &p : partitions) p.allocate(points_requested_per_partition, GridX_size);
 }
 
 
-
-void GPU_Implementation5::transfer_ponts_to_device()
+void GPU_Implementation6::transfer_ponts_to_device()
 {
     spdlog::info("GPU_Implementation: transfer_to_device()");
     int points_uploaded = 0;
-    for(GPU_Partition &p : partitions)
+    for(GPU_Partition_3D &p : partitions)
     {
         p.transfer_points_from_soa_to_device(hssoa, points_uploaded);
         points_uploaded += p.nPts_partition;
@@ -356,13 +353,12 @@ void GPU_Implementation5::transfer_ponts_to_device()
 }
 
 
-
-void GPU_Implementation5::transfer_from_device()
+void GPU_Implementation6::transfer_from_device()
 {
     unsigned offset_pts = 0;
     for(int i=0;i<partitions.size();i++)
     {
-        GPU_Partition &p = partitions[i];
+        GPU_Partition_3D &p = partitions[i];
         int capacity_required = offset_pts + p.nPts_partition;
         if(capacity_required > hssoa.capacity)
         {
@@ -380,7 +376,7 @@ void GPU_Implementation5::transfer_from_device()
     indenter_force.setZero();
     for(int i=0;i<partitions.size();i++)
     {
-        GPU_Partition &p = partitions[i];
+        GPU_Partition_3D &p = partitions[i];
         cudaSetDevice(p.Device);
         cudaStreamSynchronize(p.streamCompute);
         if(p.error_code)
@@ -390,10 +386,8 @@ void GPU_Implementation5::transfer_from_device()
         }
 
         for(int j=0; j<model->prms.n_indenter_subdivisions; j++)
-        {
-            indenter_force.x() += p.host_side_indenter_force_accumulator[j*2+0];
-            indenter_force.y() += p.host_side_indenter_force_accumulator[j*2+1];
-        }
+            for(int k=0;k<3;k++)
+                indenter_force[k] += p.host_side_indenter_force_accumulator[j*SimParams3D::dim+k];
     }
 
     int count = 0;

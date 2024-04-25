@@ -54,11 +54,11 @@ __device__ void PreparePointForTransfer(const int pt_idx, const int index_in_tra
                                         const double *buffer_pts);
 
 
-__device__ void Wolper_Drucker_Prager(icy::Point &p);
-__device__ void CheckIfPointIsInsideFailureSurface(icy::Point &p);
+__device__ void Wolper_Drucker_Prager(Point3D &p);
+__device__ void CheckIfPointIsInsideFailureSurface(Point3D &p);
 //__device__ Eigen::Matrix2d KirchhoffStress_Wolper(const Eigen::Matrix2d &F);
 
-__device__ void ComputePQ(icy::Point &p, const double &kappa, const double &mu);
+__device__ void ComputePQ(Point3D  &p, const double &kappa, const double &mu);
 __device__ void GetParametersForGrain(short grain, double &pmin, double &pmax, double &qmax, double &beta, double &mSq, double &pmin2);
 
 __device__ Eigen::Vector3d dev_d(Eigen::Vector3d Adiag);
@@ -98,8 +98,6 @@ struct GPU_Partition_3D
     void normalize_timings(int cycles);
 
     // helper functions
-    double *getHaloAddress(int whichHalo, int whichGridArray);
-    double *getHaloReceiveAddress(int whichHalo, int whichGridArray);
     int getLeftBufferCount() {return host_side_utility_data[idx_transfer_to_left];}
     int getRightBufferCount() {return host_side_utility_data[idx_transfer_to_right];}
     int getMaxDeviationValue() {return host_side_utility_data[idx_pts_max_extent];}

@@ -36,28 +36,31 @@ void SnapshotManager::LoadRawPoints(std::string fileName)
 
     // read volume attribute
     H5::Attribute att_volume = dataset_grains.openAttribute("volume");
-    float volume;
-    att_volume.read(H5::PredType::NATIVE_FLOAT, &volume);
-    model->prms.Volume = (double)volume;
+    att_volume.read(H5::PredType::NATIVE_DOUBLE, &model->prms.Volume);
     file.close();
 
     // get block dimensions
-    std::pair<Eigen::Vector2d, Eigen::Vector2d> boundaries = model->gpu.hssoa.getBlockDimensions();
+    std::pair<Eigen::Vector3d, Eigen::Vector3d> boundaries = model->gpu.hssoa.getBlockDimensions();
     model->prms.xmin = boundaries.first.x();
     model->prms.ymin = boundaries.first.y();
+    model->prms.zmin = boundaries.first.z();
     model->prms.xmax = boundaries.second.x();
     model->prms.ymax = boundaries.second.y();
+    model->prms.zmax = boundaries.second.z();
 
 
     const double &h = model->prms.cellsize;
     const double box_x = model->prms.GridXTotal*h;
+    const double box_z = model->prms.GridZ*h;
     const double length = model->prms.xmax - model->prms.xmin;
+    const double width = model->prms.zmax - model->prms.zmin;
     const double x_offset = (box_x - length)/2;
     const double y_offset = 2*h;
+    const double z_offset = (box_z - width)/2;
 
-    Eigen::Vector2d offset(x_offset, y_offset);
+    Eigen::Vector3d offset(x_offset, y_offset, z_offset);
     model->gpu.hssoa.offsetBlock(offset);
-    model->gpu.hssoa.RemoveDisabledAndSort(model->prms.cellsize_inv, model->prms.GridY);
+    model->gpu.hssoa.RemoveDisabledAndSort(model->prms.cellsize_inv, model->prms.GridY, model->prms.GridZ);
     model->gpu.hssoa.InitializeBlock();
 
     // set indenter starting position
