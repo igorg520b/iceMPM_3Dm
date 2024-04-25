@@ -7,7 +7,7 @@
 SimParams3D *GPU_Partition_3D::prms;
 
 
-GPU_Partition_3D::GPU_Partition()
+GPU_Partition_3D::GPU_Partition_3D()
 {
     error_code = 0;
     nPts_partition = GridX_partition = GridX_offset = 0;

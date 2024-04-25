@@ -1,6 +1,9 @@
 #ifndef MPM_KERNELS_CUH
 #define MPM_KERNELS_CUH
 
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include "point_3d.h"
 
 using namespace Eigen;
 
@@ -419,7 +422,7 @@ __device__ void CheckIfPointIsInsideFailureSurface(Point3D &p)
 
 
 
-__device__ void ComputePQ(icy::Point &p, const double &kappa, const double &mu)
+__device__ void ComputePQ(Point3D &p, const double &kappa, const double &mu)
 {
     /*
     svd2x2(p.Fe, p.U, p.vSigma, p.V);
@@ -432,7 +435,7 @@ __device__ void ComputePQ(icy::Point &p, const double &kappa, const double &mu)
 }
 
 
-__device__ void Wolper_Drucker_Prager(icy::Point &p)
+__device__ void Wolper_Drucker_Prager(Point3D &p)
 {
     /*
     const double &mu = gprms.mu;

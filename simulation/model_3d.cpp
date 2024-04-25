@@ -56,7 +56,7 @@ bool Model3D::Step()
 
     gpu.transfer_from_device();
     max_pt_deviation = 0;
-    for(GPU_Partition &p : gpu.partitions)
+    for(GPU_Partition_3D &p : gpu.partitions)
     {
         max_points_transferred = std::max((int)max_points_transferred, (int)p.max_pts_sent);
         max_pt_deviation = std::max(max_pt_deviation, p.max_pt_deviation);
@@ -74,7 +74,7 @@ bool Model3D::Step()
     spdlog::info("{:^3s} {:^8s} {:^8s} {:^7s} {:^3s} {:^3s} | {:^5s} {:^5s} {:^5s} | {:^5s} {:^5s} {:^5s} {:^5s} {:^5s} | {:^6s}",
                  "P-D",    "pts",  "free", "dis","msn", "mdv", "p2g",  "s2",  "S12",     "u",  "g2p", "psnt", "prcv","S36", "tot");
     bool rebalance = false;
-    for(GPU_Partition &p : gpu.partitions)
+    for(GPU_Partition_3D &p : gpu.partitions)
     {
         p.normalize_timings(count_unupdated_steps);
         double freeSpacePercentage = (double)(p.nPtsPitch-p.nPts_partition)/p.nPts_partition;
@@ -100,7 +100,7 @@ bool Model3D::Step()
     if(rebalance)
     {
         spdlog::info("squeezing and sorting HSSOA");
-        gpu.hssoa.RemoveDisabledAndSort(prms.cellsize_inv, prms.GridY);
+        gpu.hssoa.RemoveDisabledAndSort(prms.cellsize_inv, prms.GridY, prms.GridZ);
         gpu.split_hssoa_into_partitions();
         gpu.transfer_ponts_to_device();
         SyncTopologyRequired = true;

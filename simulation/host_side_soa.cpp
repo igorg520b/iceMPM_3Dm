@@ -38,7 +38,7 @@ void HostSideSOA::RemoveDisabledAndSort(double hinv, int GridY, int GridZ)
     size = it_result.m_point.pos;
     spdlog::info("RemoveDisabledAndSort: {} removed; new size {}", size_before-size, size);
     std::sort(begin(), end(),
-              [&hinv,&GridY](ProxyPoint3D &p1, ProxyPoint3D &p2)
+              [=](ProxyPoint3D &p1, ProxyPoint3D &p2)
               {return p1.getCellIndex(hinv,GridY,GridZ)<p2.getCellIndex(hinv,GridY,GridZ);});
     spdlog::info("RemoveDisabledAndSort done");
 }
@@ -61,25 +61,15 @@ void HostSideSOA::Allocate(unsigned capacity)
     spdlog::info("HSSOA allocate capacity {} pt; toal {} Gb", capacity, (double)allocation_size/(1024.*1024.*1024.));
 }
 
-unsigned HostSideSOA::FindFirstPointAtGridXIndex(const int index_grid_x, const double hinv)
-{
-    SOAIterator it = std::lower_bound(begin(),end(),index_grid_x,
-                                      [hinv](const ProxyPoint &p, const int val)
-                                      {return p.getXIndex(hinv)<val;});
-
-    unsigned result_pos = it.m_point.pos;
-    return result_pos;
-}
-
 
 void HostSideSOA::InitializeBlock()
 {
     for(SOAIterator it = begin(); it!=end(); ++it)
     {
-        ProxyPoint &p = *it;
+        ProxyPoint3D &p = *it;
         p.setValue(SimParams3D::idx_Jp_inv,1);
         for(int i=0; i<SimParams3D::dim; i++)
-                p.setValue(icy::SimParams::Fe00+i*3+i, 1.0);
+                p.setValue(SimParams3D::Fe00+i*3+i, 1.0);
     }
 }
 

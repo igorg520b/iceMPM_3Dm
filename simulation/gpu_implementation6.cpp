@@ -186,7 +186,7 @@ void GPU_Implementation6::receive_points()
         int left=0, right=0;
         if(i!=0)
         {
-            GPU_Partition &pprev = partitions[i-1];
+            GPU_Partition_3D &pprev = partitions[i-1];
             err = cudaStreamWaitEvent(p.streamCompute, partitions[i-1].event_70_pts_sent);
             if(err != cudaSuccess) throw std::runtime_error("RP wait event");
             left = pprev.getRightBufferCount();
@@ -330,7 +330,7 @@ void GPU_Implementation6::allocate_arrays()
     const unsigned &nPts = model->prms.nPtsTotal;
 
     auto it = std::max_element(partitions.begin(), partitions.end(),
-                               [](const GPU_Partition &p1, const GPU_Partition &p2)
+                               [](const GPU_Partition_3D &p1, const GPU_Partition_3D &p2)
                                {return p1.GridX_partition < p2.GridX_partition;});
     int max_GridX_size = it->GridX_partition;
     int GridX_size = std::min(max_GridX_size*2, model->prms.GridXTotal);
@@ -385,7 +385,7 @@ void GPU_Implementation6::transfer_from_device()
             throw std::runtime_error("error code");
         }
 
-        for(int j=0; j<model->prms.n_indenter_subdivisions; j++)
+        for(int j=0; j<model->prms.IndenterSubdivisions; j++)
             for(int k=0;k<3;k++)
                 indenter_force[k] += p.host_side_indenter_force_accumulator[j*SimParams3D::dim+k];
     }
@@ -405,7 +405,7 @@ void GPU_Implementation6::transfer_from_device()
         unsigned offset_pts = 0;
         for(int i=0;i<partitions.size();i++)
         {
-            GPU_Partition &p = partitions[i];
+            GPU_Partition_3D &p = partitions[i];
             int count_disabled_soa = 0;
             for(int i=offset_pts; i<offset_pts+p.nPts_partition; i++)
             {
@@ -421,8 +421,6 @@ void GPU_Implementation6::transfer_from_device()
             spdlog::error("P{}: size {}; disabled {}; disabled_soa {}",
                           p.PartitionID, p.nPts_partition, p.nPts_disabled, count_disabled_soa);
         }
-
-
         throw std::runtime_error("transfer_from_device(): active point count mismatch");
     }
 
@@ -430,23 +428,23 @@ void GPU_Implementation6::transfer_from_device()
 }
 
 
-void GPU_Implementation5::synchronize()
+void GPU_Implementation6::synchronize()
 {
-    for(GPU_Partition &p : partitions)
+    for(GPU_Partition_3D &p : partitions)
     {
         cudaSetDevice(p.Device);
         cudaDeviceSynchronize();
     }
 }
 
-void GPU_Implementation5::update_constants()
+void GPU_Implementation6::update_constants()
 {
-    for(GPU_Partition &p : partitions) p.update_constants();
+    for(GPU_Partition_3D &p : partitions) p.update_constants();
 }
 
-void GPU_Implementation5::reset_indenter_force_accumulator()
+void GPU_Implementation6::reset_indenter_force_accumulator()
 {
-    for(GPU_Partition &p : partitions)
+    for(GPU_Partition_3D &p : partitions)
     {
         p.reset_indenter_force_accumulator();
         p.reset_timings();
@@ -457,30 +455,7 @@ void GPU_Implementation5::reset_indenter_force_accumulator()
 
 
 
-
-// ==============================================================================
-
-
-
-
-
-
-
-
-
 /*
-
-// ==============================  kernels  ====================================
-
-__device__ Matrix2d polar_decomp_R(const Matrix2d &val)
-{
-    // polar decomposition
-    // http://www.cs.cornell.edu/courses/cs4620/2014fa/lectures/polarnotes.pdf
-    double th = atan2(val(1,0) - val(0,1), val(0,0) + val(1,1));
-    Matrix2d result;
-    result << cosf(th), -sinf(th), sinf(th), cosf(th);
-    return result;
-}
 
 // ========================================= initialization and kernel execution
 

@@ -121,7 +121,7 @@ uint16_t ProxyPoint3D::getGrain()
     return (val & 0xffff);
 }
 
-int ProxyPoint3D::getCellIndex(double hinv, unsigned GridY, int GridZ)
+int ProxyPoint3D::getCellIndex(double hinv, int GridY, int GridZ)
 {
     Eigen::Vector3d v = getPos();
     Eigen::Vector3i idx = (v*hinv + Eigen::Vector3d::Constant(0.5)).cast<int>();

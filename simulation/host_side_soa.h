@@ -59,8 +59,7 @@ public:
     SOAIterator end(){return SOAIterator(size, host_buffer, capacity);}
 
     void Allocate(unsigned capacity);
-    void RemoveDisabledAndSort(double hinv, int GridY);
-    unsigned FindFirstPointAtGridXIndex(const int index_grid_x, const double hinv);
+    void RemoveDisabledAndSort(double hinv, int GridY, int GridZ);
     void InitializeBlock(); // set the matrices that are supposed to be identity, i.e. Fe
 
     double* getPointerToLine(int idxLine) {return host_buffer + capacity*idxLine;}
