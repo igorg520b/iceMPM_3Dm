@@ -49,8 +49,6 @@ GPU_Partition_3D::~GPU_Partition_3D()
     spdlog::info("Destructor invoked; partition {} on device {}", PartitionID, Device);
 }
 
-
-
 void GPU_Partition_3D::initialize(int device, int partition)
 {
     PartitionID = partition;
@@ -153,12 +151,14 @@ void GPU_Partition_3D::reset_indenter_force_accumulator()
 
 void GPU_Partition_3D::receive_halos()
 {
-
     cudaSetDevice(Device);
     const int haloElementCount = prms->GridHaloSize*prms->GridY*prms->GridZ*2;
     const int tpb = prms->tpb_Upd;   // threads per block
     const int blocksPerGrid = (haloElementCount + tpb - 1) / tpb;
-    partition_kernel_receive_halos<<<blocksPerGrid, tpb, 0, streamCompute>>>(haloElementCount, GridX_partition, GridX_offset,
+    partition_kernel_receive_halos_left<<<blocksPerGrid, tpb, 0, streamCompute>>>(haloElementCount, GridX_partition,
+                                                                             nGridPitch, grid_array,
+                                                                             halo_transfer_buffer[0], halo_transfer_buffer[1]);
+    partition_kernel_receive_halos_right<<<blocksPerGrid, tpb, 0, streamCompute>>>(haloElementCount, GridX_partition,
                                                                              nGridPitch, grid_array,
                                                                              halo_transfer_buffer[0], halo_transfer_buffer[1]);
 
@@ -301,6 +301,7 @@ void GPU_Partition_3D::g2p(const bool recordPQ, const bool enablePointTransfer)
 
 void GPU_Partition_3D::receive_points(int nFromLeft, int nFromRight)
 {
+    spdlog::info("receive_points {} - {}",nFromLeft, nFromRight);
     if(nFromLeft)
     {
         const int &n = nFromLeft;

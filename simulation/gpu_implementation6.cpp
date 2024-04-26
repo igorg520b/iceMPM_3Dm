@@ -43,6 +43,7 @@ void GPU_Implementation6::p2g()
         GPU_Partition_3D &p = partitions[i];
         p.p2g();    // invoke the P2G kernel
 
+        const size_t halo_count = sizeof(double)*gridY*gridZ*halo*2;
         if(i!=0)
         {
             // send halo to the left
@@ -51,7 +52,6 @@ void GPU_Implementation6::p2g()
             {
                 double *src = p.grid_array + j*p.nGridPitch;
                 double *dst = pprev.halo_transfer_buffer[1] + j*pprev.nGridPitch;
-                const size_t halo_count = sizeof(double)*gridY*gridZ*halo*2;
                 err = cudaMemcpyPeerAsync(dst, pprev.Device, src, p.Device, halo_count, p.streamCompute);
             }
             if(err != cudaSuccess) throw std::runtime_error("p2g cudaMemcpyPeerAsync");
@@ -66,7 +66,6 @@ void GPU_Implementation6::p2g()
             {
                 double *src = p.grid_array + j*p.nGridPitch + gridZ*gridY*(p.GridX_partition);
                 double *dst = pnxt.halo_transfer_buffer[0] + j*pnxt.nGridPitch;
-                const size_t halo_count = sizeof(double)*gridY*gridZ*halo*2;
                 err = cudaMemcpyPeerAsync(dst, pnxt.Device, src, p.Device, halo_count, p.streamCompute);
             }
             if(err != cudaSuccess) throw std::runtime_error("p2g cudaMemcpyPeerAsync");

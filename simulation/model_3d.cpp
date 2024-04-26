@@ -33,8 +33,10 @@ bool Model3D::Step()
     int count_unupdated_steps = 0;
     gpu.reset_indenter_force_accumulator();
 
+//    prms.UpdateEveryNthStep = 50;
     do
     {
+        spdlog::info("substep {}",count_unupdated_steps);
         simulation_time += prms.InitialTimeStep;
         prms.indenter_x = prms.indenter_x_initial + simulation_time*prms.IndVelocity;
 
@@ -43,7 +45,7 @@ bool Model3D::Step()
         gpu.receive_halos();
         gpu.update_nodes();
         const bool isZeroStep = (prms.SimulationStep+count_unupdated_steps) % prms.UpdateEveryNthStep == 0;
-        const bool enablePointTransfer = (prms.SimulationStep+count_unupdated_steps) % (prms.UpdateEveryNthStep/prms.PointTransferFrequency) == 0;
+        const bool enablePointTransfer = true;//(prms.SimulationStep+count_unupdated_steps) % (prms.UpdateEveryNthStep/prms.PointTransferFrequency) == 0;
         gpu.g2p(isZeroStep, enablePointTransfer);
         if(enablePointTransfer) gpu.receive_points();
         gpu.record_timings(enablePointTransfer);

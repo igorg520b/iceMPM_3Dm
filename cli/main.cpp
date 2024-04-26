@@ -26,7 +26,7 @@ int main(int argc, char** argv)
 
     // initialize the model
 
-    model.Reset();
+    //model.Reset();
     snapshot.model = &model;
 
     // parse options
@@ -34,7 +34,7 @@ int main(int argc, char** argv)
 
     options.add_options()
         ("file", "Configuration file", cxxopts::value<std::string>())
-        ("s,start", "Only write the starting snapshot", cxxopts::value<bool>()->default_value("false"))
+        ("s,snapshot", "Only write the starting snapshot", cxxopts::value<bool>()->default_value("false"))
         ("r,resume", "Resume from a full snapshot (.h5) file", cxxopts::value<std::string>())
         ;
     options.parse_positional({"file"});
@@ -53,14 +53,15 @@ int main(int argc, char** argv)
     }
 
 
-    if(option_parse_result.count("start"))
+    if(option_parse_result.count("snapshot"))
     {
         // only generate the starting snapshot
         // write a snapshot and return
     }
 
 
-/*
+    model.Step();
+
     model.gpu.transfer_completion_callback = [&](){
         if(snapshot_thread.joinable()) snapshot_thread.join();
         snapshot_thread = std::thread([&](){
@@ -75,7 +76,7 @@ int main(int argc, char** argv)
     // ensure that the folder exists
     std::filesystem::path outputFolder(snapshot_directory);
     std::filesystem::create_directory(outputFolder);
-
+/*
     // start the simulation thread
     std::thread simulation_thread([&](){
         bool result;

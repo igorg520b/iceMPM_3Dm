@@ -42,7 +42,7 @@ void SimParams3D::Reset()
     SetupType = 0;
     GrainVariability = 0.50;
 
-    GridHaloSize = 10;
+    GridHaloSize = 15;
     ExtraSpaceForIncomingPoints = 0.2;  // in percentage
     PointsTransferBufferFraction = 0.05; // % of points that could "fly over" during a given cycle
     nPartitions = 4;        // one partition of single-gpu; >1 for multi-gpu

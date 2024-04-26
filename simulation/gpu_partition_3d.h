@@ -23,9 +23,15 @@ __global__ void partition_kernel_p2g(const int gridX, const int gridX_offset, co
 
 
 // receive grid data from adjacent partitions
-__global__ void partition_kernel_receive_halos(const int haloElementCount, const int gridX, const int gridX_offset,
+__global__ void partition_kernel_receive_halos_left(const int haloElementCount, const int gridX_partition,
                                                const int pitch_grid, double *buffer_grid,
-const double *halo0, const double *halo1);
+                                               const double *halo0, const double *halo1);
+
+__global__ void partition_kernel_receive_halos_right(const int haloElementCount, const int gridX_partition,
+                                               const int pitch_grid, double *buffer_grid,
+                                               const double *halo0, const double *halo1);
+
+
 
 
 __global__ void partition_kernel_update_nodes(const Eigen::Vector2d indCenter,
@@ -56,13 +62,15 @@ __device__ void PreparePointForTransfer(const int pt_idx, const int index_in_tra
 
 __device__ void Wolper_Drucker_Prager(Point3D &p);
 __device__ void CheckIfPointIsInsideFailureSurface(Point3D &p);
-//__device__ Eigen::Matrix2d KirchhoffStress_Wolper(const Eigen::Matrix2d &F);
+__device__ Eigen::Matrix3d KirchhoffStress_Wolper(const Eigen::Matrix3d &F);
+
 
 __device__ void ComputePQ(Point3D  &p, const double &kappa, const double &mu);
 __device__ void GetParametersForGrain(short grain, double &pmin, double &pmax, double &qmax, double &beta, double &mSq, double &pmin2);
 
 __device__ Eigen::Vector3d dev_d(Eigen::Vector3d Adiag);
 __device__ Eigen::Matrix3d dev(Eigen::Matrix3d A);
+__device__ void svd3x3(const Eigen::Matrix3d &A, Eigen::Matrix3d &_U, Eigen::Vector3d &_S, Eigen::Matrix3d &_V);
 
 
 struct GPU_Partition_3D
