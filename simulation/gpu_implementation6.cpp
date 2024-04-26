@@ -142,7 +142,11 @@ void GPU_Implementation6::receive_points()
         if(err != cudaSuccess) throw std::runtime_error("RP cudaSetDevice");
 
         err = cudaEventSynchronize(p.event_50_g2p_completed); // unfortunately, we must wait until host_utility_data populates
-        if(err != cudaSuccess) throw std::runtime_error("RP cudaEventSynchronize");
+        if(err != cudaSuccess)
+        {
+            spdlog::error("RP cudaEventSynchronize: {}", cudaGetErrorString(err));
+            throw std::runtime_error("RP cudaEventSynchronize");
+        }
         p.nPts_disabled += (p.getRightBufferCount()+p.getLeftBufferCount());
 
 

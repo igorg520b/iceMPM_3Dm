@@ -198,8 +198,6 @@ void GPU_Partition_3D::transfer_from_device(HostSideSOA &hssoa, int point_idx_of
     }
 }
 
-
-
 void GPU_Partition_3D::transfer_points_from_soa_to_device(HostSideSOA &hssoa, int point_idx_offset)
 {
     cudaError_t err;
@@ -258,9 +256,6 @@ void GPU_Partition_3D::update_nodes()
     if(cudaGetLastError() != cudaSuccess) throw std::runtime_error("update_nodes");
 }
 
-
-
-// =====================================
 
 void GPU_Partition_3D::g2p(const bool recordPQ, const bool enablePointTransfer)
 {

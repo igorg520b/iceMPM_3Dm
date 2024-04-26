@@ -30,11 +30,9 @@ __global__ void partition_kernel_p2g(const int gridX, const int gridX_offset, co
     const double &h = gprms.cellsize;
     const double &h_inv = gprms.cellsize_inv;
     const double &particle_mass = gprms.ParticleMass;
-
     const int &gridY = gprms.GridY;
     const int &gridZ = gprms.GridZ;
     const int &halo = gprms.GridHaloSize;
-
     const int &offset = gprms.gbOffset;
 
     // pull point data from SOA
@@ -83,7 +81,8 @@ __global__ void partition_kernel_p2g(const int gridX, const int gridX_offset, co
                 Vector3d incV = Wip*(velocity*particle_mass + subterm2*dpos);
                 double incM = Wip*particle_mass;
 
-                int idx_gridnode = (i+base_coord_i[0]-gridX_offset)*(gridY*gridZ) + (j+base_coord_i[1])*gridZ + (k+base_coord_i[2]);
+                int idx_gridnode = (i+base_coord_i[0]-gridX_offset)*(gridY*gridZ) +
+                                   (j+base_coord_i[1])*gridZ + (k+base_coord_i[2]);
 
                 // Udpate mass, velocity and force
                 atomicAdd(&buffer_grid[0*pitch_grid + idx_gridnode + offset], incM);
@@ -268,7 +267,7 @@ __global__ void partition_kernel_g2p(const bool recordPQ, const bool enablePoint
             for (int k = 0; k < 3; k++)
         {
             Vector3d dpos = Vector3d(i, j, k) - fx;
-            double weight = ww[i][0]*ww[j][1];
+            double weight = ww[i][0]*ww[j][1]*ww[k][2];
 
             int idx_gridnode = (i+base_coord_i[0]-gridX_offset)*(gridY*gridZ) + (j+base_coord_i[1])*gridZ + (k+base_coord_i[2]);
 

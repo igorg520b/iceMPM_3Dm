@@ -38,7 +38,7 @@ bool Model3D::Step()
     {
         spdlog::info("substep {}",count_unupdated_steps);
         simulation_time += prms.InitialTimeStep;
-        prms.indenter_x = prms.indenter_x_initial + simulation_time*prms.IndVelocity;
+//        prms.indenter_x = prms.indenter_x_initial + simulation_time*prms.IndVelocity;
 
         gpu.reset_grid();
         gpu.p2g();

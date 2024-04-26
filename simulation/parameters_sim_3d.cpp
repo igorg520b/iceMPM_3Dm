@@ -129,10 +129,6 @@ std::string SimParams3D::ParseFile(std::string fileName)
     ComputeCamClayParams();
     ComputeHelperVariables();
 
-    std::cout << "loaded parameters file " << fileName << std::endl;
-    std::cout << "DomainDimensionX " << DomainDimensionX << std::endl;
-    std::cout << "cellsize " << cellsize << std::endl;
-
     if(!doc.HasMember("InputRawPoints"))
     {
         spdlog::critical("InputRawPoints entry is missing in JSON config file");
@@ -140,7 +136,7 @@ std::string SimParams3D::ParseFile(std::string fileName)
     }
 
     std::string result = doc["InputRawPoints"].GetString();
-    spdlog::info("ParseFile; raw point data {}",result);
+    spdlog::info("Loaded parameters; grid [{} x {} x {}] pointFile {}",GridXTotal, GridY, GridZ, result);
     return result;
 }
 
