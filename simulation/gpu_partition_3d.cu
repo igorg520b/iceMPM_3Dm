@@ -296,7 +296,7 @@ void GPU_Partition_3D::g2p(const bool recordPQ, const bool enablePointTransfer)
 
 void GPU_Partition_3D::receive_points(int nFromLeft, int nFromRight)
 {
-    spdlog::info("receive_points {} - {}",nFromLeft, nFromRight);
+//    spdlog::info("receive_points {} - {}",nFromLeft, nFromRight);
     if(nFromLeft)
     {
         const int &n = nFromLeft;

@@ -135,7 +135,7 @@ find_package(VTK 9.1 HINTS "C:\\libraries\\vtk-build\\lib\\cmake\\vtk-9.1" REQUI
         gui/windows/mainwindow.cpp
         gui/windows/mainwindow.h
         gui/windows/mainwindow.ui
-        icons.qrc
+        gui/icons.qrc
 
         gui/vtk/vtk_representation.cpp
         gui/vtk/vtk_representation.h
@@ -144,6 +144,29 @@ find_package(VTK 9.1 HINTS "C:\\libraries\\vtk-build\\lib\\cmake\\vtk-9.1" REQUI
         gui/backgroundworker.h
         gui/parameters_wrapper.h
 
+        # simulation
+        simulation/parameters_sim_3d.h
+        simulation/parameters_sim_3d.cpp
+        simulation/model_3d.cpp
+        simulation/model_3d.h
+        simulation/point_3d.h
+        simulation/point_3d.cpp
+        simulation/host_side_soa.h
+        simulation/host_side_soa.cpp
+        simulation/proxypoint3d.h
+        simulation/proxypoint3d.cpp
+
+        # cuda
+        simulation/helper_math.cuh
+        simulation/gpu_implementation6.h
+        simulation/gpu_implementation6.cpp
+        simulation/gpu_partition_3d.h
+        simulation/gpu_partition_3d.cu
+        simulation/mpm_kernels.cuh
+
+        # serializing
+        simulation/snapshotmanager.h
+        simulation/snapshotmanager.cpp
     )
 
     set_target_properties(iceMPM_GUIm_3D PROPERTIES CUDA_ARCHITECTURES "80")

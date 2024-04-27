@@ -1,11 +1,11 @@
 {
 "InputRawPoints":"geometries_3d/3d_200k.h5",
 "nPartitions":2,
-"GridHaloSize":10,
+"GridHaloSize":15,
 "ExtraSpaceForIncomingPoints":0.2,
 
-"InitialTimeStep":4.0e-5,
-"ParticleViewSize":2.0,
+"InitialTimeStep":3.0e-5,
+"ParticleViewSize":5.0,
 "GridX":64,
 "GridY":27,
 "GridZ":56,

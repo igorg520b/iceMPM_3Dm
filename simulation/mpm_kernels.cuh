@@ -164,7 +164,7 @@ __global__ void partition_kernel_update_nodes(const Eigen::Vector2d indCenter,
 
 
     // indenter
-    Vector2d gnpos2d(gi.x(), gi.y());    // position of the grid node
+    Vector2d gnpos2d(gnpos.x(), gnpos.y());    // position of the grid node
     Vector2d n = gnpos2d - indCenter;    // vector pointing at the node from indenter's center
 
     if(n.squaredNorm() < indRsq)
