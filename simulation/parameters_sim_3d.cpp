@@ -50,6 +50,7 @@ void SimParams3D::Reset()
     RebalanceThresholdFreeSpaceRemaining = 0.10;
     RebalanceThresholdDisabledPercentage = 0.05;
     PointTransferFrequency = 2;
+    SnapshotPeriod = 10;
 
     ComputeLame();
     ComputeCamClayParams();

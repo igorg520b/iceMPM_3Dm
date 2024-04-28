@@ -57,10 +57,9 @@ int main(int argc, char** argv)
     {
         // only generate the starting snapshot
         // write a snapshot and return
+        snapshot.SaveSnapshot(snapshot_directory, true);
+        return 0;
     }
-
-
-    model.Step();
 
     model.gpu.transfer_completion_callback = [&](){
         if(snapshot_thread.joinable()) snapshot_thread.join();
@@ -76,7 +75,7 @@ int main(int argc, char** argv)
     // ensure that the folder exists
     std::filesystem::path outputFolder(snapshot_directory);
     std::filesystem::create_directory(outputFolder);
-/*
+
     // start the simulation thread
     std::thread simulation_thread([&](){
         bool result;
@@ -107,7 +106,7 @@ int main(int argc, char** argv)
     simulation_thread.join();
     model.gpu.synchronize();
     snapshot_thread.join();
-*/
+
     std::cout << "cm done\n";
 
     return 0;

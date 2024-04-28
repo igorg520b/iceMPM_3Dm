@@ -72,8 +72,9 @@ MainWindow::MainWindow(QWidget *parent)
 // anything that includes the Model
     renderer->AddActor(representation.actor_points);
     renderer->AddActor(representation.actor_indenter);
-/*    renderer->AddActor(representation.actor_grid);
-    renderer->AddActor(representation.actor_partitions);
+    renderer->AddActor(representation.actor_axes);
+    renderer->AddActor(representation.actor_grid);
+/*    renderer->AddActor(representation.actor_partitions);
     renderer->AddActor(representation.actorText);
     renderer->AddActor(representation.scalarBar);
 */
@@ -151,8 +152,6 @@ void MainWindow::restore_settings()
             bool b = var.toBool();
             ui->actionTake_Screenshots->setChecked(b);
         }
-
-        comboBox_visualizations->setCurrentIndex(settings.value("vis_option").toInt());
 
         var = settings.value("splitter_size_0");
         if(!var.isNull())

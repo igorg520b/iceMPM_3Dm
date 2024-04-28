@@ -61,7 +61,7 @@ bool Model3D::Step()
         max_points_transferred = std::max((int)max_points_transferred, (int)p.max_pts_sent);
         max_pt_deviation = std::max(max_pt_deviation, p.max_pt_deviation);
     }
-    spdlog::info("finished {} ({}); host pts {}; cap {}; max_tr {}; max_dev {}; ptf {}", prms.SimulationEndTime,
+    spdlog::info("finished {} ({}); host pts {}; cap {}; max_tr {}; max_dev {}; ptf {}", prms.SimulationStep,
                  prms.AnimationFrameNumber(), gpu.hssoa.size, gpu.hssoa.capacity, max_points_transferred,
                     max_pt_deviation, prms.PointTransferFrequency);
     prms.SimulationTime = simulation_time;
@@ -82,7 +82,7 @@ bool Model3D::Step()
         if(freeSpacePercentage < prms.RebalanceThresholdFreeSpaceRemaining) rebalance = true;
         if(disabledPercentage > prms.RebalanceThresholdDisabledPercentage) rebalance = true;
 
-        spdlog::info("{:>1}-{:>1} {:>8} {:>8} {:>7} {:>3} {:>3} | {:>5.1f} {:>5.1f} {:>5.1f} | {:>5.1f} {:>5.1f} {:>5.1f} {:5.1f} {:5.1f} | {:>6.1f}",
+        spdlog::info("{:>1}-{:>1} {:>8} {:>8} {:>7} {:>3} {:>3} | {:>5.0f} {:>5.0f} {:>5.0f} | {:>5.0f} {:>5.0f} {:>5.0f} {:5.0f} {:5.0f} | {:>6.0f}",
                      p.PartitionID, p.Device, p.nPts_partition, (p.nPtsPitch-p.nPts_partition), p.nPts_disabled, p.max_pts_sent, p.max_pt_deviation,
                      p.timing_10_P2GAndHalo, p.timing_20_acceptHalo, (p.timing_10_P2GAndHalo + p.timing_20_acceptHalo),
                      p.timing_30_updateGrid, p.timing_40_G2P, p.timing_60_ptsSent, p.timing_70_ptsAccepted,

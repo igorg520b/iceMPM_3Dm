@@ -16,10 +16,11 @@ public:
     Model3D *model;
 
     void LoadRawPoints(std::string fileName);
+    void SaveSnapshot(std::string outputDirectory, bool compress = false);
+    void SaveParametersAsAttributes(H5::DataSet &dataset);
 
-//    void SaveSnapshot(std::string directory);
+
 //    void ReadSnapshot(std::string fileName); // return file number
-//    void SaveParametersAsAttributes(H5::DataSet &dataset);
 //    void SavePQ(std::string directory);
 
     const std::string directory_snapshots = "snapshots";

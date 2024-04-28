@@ -43,6 +43,7 @@ public:
 
     double InitialTimeStep, SimulationEndTime;
     int UpdateEveryNthStep; // run N steps without update
+    int SnapshotPeriod;
     int SimulationStep;
     double SimulationTime;
 

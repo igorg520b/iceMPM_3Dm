@@ -12,6 +12,102 @@
 #include <utility>
 
 
+void SnapshotManager::SaveSnapshot(std::string outputDirectory, bool compress)
+{
+    std::filesystem::path odp(outputDirectory);
+    if(!std::filesystem::is_directory(odp) || !std::filesystem::exists(odp)) std::filesystem::create_directory(odp);
+    std::filesystem::path odp2(outputDirectory+"/"+directory_snapshots);
+    if(!std::filesystem::is_directory(odp2) || !std::filesystem::exists(odp2)) std::filesystem::create_directory(odp2);
+
+    const int current_frame_number = model->prms.AnimationFrameNumber();
+    char fileName[20];
+    snprintf(fileName, sizeof(fileName), "d%05d.h5", current_frame_number);
+    std::string filePath = outputDirectory + "/" + directory_snapshots + "/" + fileName;
+    spdlog::info("saving NC frame {} to file {}", current_frame_number, filePath);
+
+
+    H5::H5File file(filePath, H5F_ACC_TRUNC);
+
+    // indenter
+    hsize_t dims_indenter = model->prms.IndenterSubdivisions * model->prms.GridZ * SimParams3D::dim;
+    H5::DataSpace dataspace_indenter(1, &dims_indenter);
+    H5::DataSet dataset_indenter = file.createDataSet("Indenter", H5::PredType::NATIVE_DOUBLE, dataspace_indenter);
+    dataset_indenter.write(model->gpu.indenter_sensor_total.data(), H5::PredType::NATIVE_DOUBLE);
+
+    hsize_t att_dim = 1;
+    H5::DataSpace att_dspace(1, &att_dim);
+    H5::Attribute att_subdivisions = dataset_indenter.createAttribute("IndenterSubdivisions", H5::PredType::NATIVE_INT, att_dspace);
+    H5::Attribute att_gridz = dataset_indenter.createAttribute("GridZ", H5::PredType::NATIVE_INT, att_dspace);
+    att_subdivisions.write(H5::PredType::NATIVE_INT, &model->prms.IndenterSubdivisions);
+    att_gridz.write(H5::PredType::NATIVE_INT, &model->prms.GridZ);
+
+    // params
+    hsize_t dims_params = sizeof(SimParams3D);
+    H5::DataSpace dataspace_params(1, &dims_params);
+    H5::DataSet dataset_params = file.createDataSet("Params", H5::PredType::NATIVE_B8, dataspace_params);
+    dataset_params.write(&model->prms, H5::PredType::NATIVE_B8);
+
+    SaveParametersAsAttributes(dataset_params);
+
+    hsize_t dims_points = model->gpu.hssoa.capacity * SimParams3D::nPtsArrays;
+    H5::DataSpace dataspace_points(1, &dims_points);
+    H5::DSetCreatPropList proplist;
+    if(compress)
+    {
+        hsize_t chunk_dims = (hsize_t)std::min((unsigned)(1024*1024), (unsigned)model->gpu.hssoa.size);
+        proplist.setChunk(1, &chunk_dims);
+        proplist.setDeflate(7);
+    }
+    H5::DataSet dataset_points = file.createDataSet("Points", H5::PredType::NATIVE_DOUBLE, dataspace_points, proplist);
+    dataset_points.write(model->gpu.hssoa.host_buffer, H5::PredType::NATIVE_DOUBLE);
+
+    H5::Attribute att_HSSOA_capacity = dataset_points.createAttribute("HSSOA_capacity", H5::PredType::NATIVE_UINT, att_dspace);
+    H5::Attribute att_HSSOA_size = dataset_points.createAttribute("HSSOA_size", H5::PredType::NATIVE_UINT, att_dspace);
+    att_HSSOA_capacity.write(H5::PredType::NATIVE_UINT, &model->gpu.hssoa.capacity);
+    att_HSSOA_size.write(H5::PredType::NATIVE_UINT, &model->gpu.hssoa.size);
+
+    file.close();
+}
+
+void SnapshotManager::SaveParametersAsAttributes(H5::DataSet &dataset)
+{
+    hsize_t att_dim = 1;
+    H5::DataSpace att_dspace(1, &att_dim);
+    H5::Attribute att_indenter_x = dataset.createAttribute("indenter_x", H5::PredType::NATIVE_DOUBLE, att_dspace);
+    H5::Attribute att_indenter_y = dataset.createAttribute("indenter_y", H5::PredType::NATIVE_DOUBLE, att_dspace);
+    H5::Attribute att_SimulationTime = dataset.createAttribute("SimulationTime", H5::PredType::NATIVE_DOUBLE, att_dspace);
+
+    H5::Attribute att_GridX = dataset.createAttribute("GridXTotal", H5::PredType::NATIVE_INT, att_dspace);
+    H5::Attribute att_GridY = dataset.createAttribute("GridY", H5::PredType::NATIVE_INT, att_dspace);
+    H5::Attribute att_GridZ = dataset.createAttribute("GridZ", H5::PredType::NATIVE_INT, att_dspace);
+
+    H5::Attribute att_nPtsTotal = dataset.createAttribute("nPtsTotal", H5::PredType::NATIVE_INT, att_dspace);
+
+    H5::Attribute att_UpdateEveryNthStep = dataset.createAttribute("UpdateEveryNthStep", H5::PredType::NATIVE_INT, att_dspace);
+    H5::Attribute att_cellsize = dataset.createAttribute("cellsize", H5::PredType::NATIVE_DOUBLE, att_dspace);
+    H5::Attribute att_IndDiameter = dataset.createAttribute("IndDiameter", H5::PredType::NATIVE_DOUBLE, att_dspace);
+    H5::Attribute att_InitialTimeStep = dataset.createAttribute("InitialTimeStep", H5::PredType::NATIVE_DOUBLE, att_dspace);
+    H5::Attribute att_SetupType = dataset.createAttribute("SetupType", H5::PredType::NATIVE_INT, att_dspace);
+    H5::Attribute att_Volume = dataset.createAttribute("Volume", H5::PredType::NATIVE_DOUBLE, att_dspace);
+
+    att_indenter_x.write(H5::PredType::NATIVE_DOUBLE, &model->prms.indenter_x);
+    att_indenter_y.write(H5::PredType::NATIVE_DOUBLE, &model->prms.indenter_y);
+    att_SimulationTime.write(H5::PredType::NATIVE_DOUBLE, &model->prms.SimulationTime);
+    att_GridX.write(H5::PredType::NATIVE_INT, &model->prms.GridXTotal);
+    att_GridY.write(H5::PredType::NATIVE_INT, &model->prms.GridY);
+    att_GridZ.write(H5::PredType::NATIVE_INT, &model->prms.GridZ);
+
+    att_nPtsTotal.write(H5::PredType::NATIVE_INT, &model->prms.nPtsTotal);
+
+    att_UpdateEveryNthStep.write(H5::PredType::NATIVE_INT, &model->prms.UpdateEveryNthStep);
+    att_cellsize.write(H5::PredType::NATIVE_DOUBLE, &model->prms.cellsize);
+    att_IndDiameter.write(H5::PredType::NATIVE_DOUBLE, &model->prms.IndDiameter);
+    att_InitialTimeStep.write(H5::PredType::NATIVE_DOUBLE, &model->prms.InitialTimeStep);
+    att_SetupType.write(H5::PredType::NATIVE_INT, &model->prms.SetupType);
+    att_Volume.write(H5::PredType::NATIVE_DOUBLE, &model->prms.Volume);
+}
+
+
 void SnapshotManager::LoadRawPoints(std::string fileName)
 {
     spdlog::info("reading raw points file {}",fileName);
@@ -150,42 +246,7 @@ void icy::SnapshotManager::SavePQ(std::string outputDirectory)
 void icy::SnapshotManager::SaveSnapshot(std::string outputDirectory)
 {
 
-    std::filesystem::path odp(outputDirectory);
-    if(!std::filesystem::is_directory(odp) || !std::filesystem::exists(odp)) std::filesystem::create_directory(odp);
-    std::filesystem::path odp2(outputDirectory+"/"+directory_snapshots);
-    if(!std::filesystem::is_directory(odp2) || !std::filesystem::exists(odp2)) std::filesystem::create_directory(odp2);
 
-    const int current_frame_number = model->prms.AnimationFrameNumber();
-    char fileName[20];
-    snprintf(fileName, sizeof(fileName), "d%05d.h5", current_frame_number);
-    std::string filePath = outputDirectory + "/" + directory_snapshots + "/" + fileName;
-    spdlog::info("saving NC frame {} to file {}", current_frame_number, filePath);
-
-    H5::H5File file(filePath, H5F_ACC_TRUNC);
-
-    hsize_t dims_indenter = model->prms.n_indenter_subdivisions*2;
-    H5::DataSpace dataspace_indneter(1, &dims_indenter);
-    H5::DataSet dataset_indneter = file.createDataSet("Indenter_2D", H5::PredType::NATIVE_DOUBLE, dataspace_indneter);
-    dataset_indneter.write(model->gpu.host_side_indenter_force_accumulator, H5::PredType::NATIVE_DOUBLE);
-
-    hsize_t dims_params = sizeof(icy::SimParams);
-    H5::DataSpace dataspace_params(1, &dims_params);
-    H5::DataSet dataset_params = file.createDataSet("Params", H5::PredType::NATIVE_B8, dataspace_params);
-    dataset_params.write(&model->prms, H5::PredType::NATIVE_B8);
-
-    SaveParametersAsAttributes(dataset_params);
-
-    hsize_t dims_points = model->prms.nPtsPitch*icy::SimParams::nPtsArrays;
-    H5::DataSpace dataspace_points(1, &dims_points);
-
-//    hsize_t chunk_dims = (hsize_t)std::min(1024*256, model->prms.nPts);
-    H5::DSetCreatPropList proplist;
-//    proplist.setChunk(1, &chunk_dims);
-//    proplist.setDeflate(4);
-    H5::DataSet dataset_points = file.createDataSet("Points", H5::PredType::NATIVE_DOUBLE, dataspace_points, proplist);
-    dataset_points.write(model->gpu.tmp_transfer_buffer, H5::PredType::NATIVE_DOUBLE);
-
-    file.close();
 
 
 
@@ -197,42 +258,7 @@ void icy::SnapshotManager::SaveSnapshot(std::string outputDirectory)
 
 }
 
-void icy::SnapshotManager::SaveParametersAsAttributes(H5::DataSet &dataset)
-{
-    hsize_t att_dim = 1;
-    H5::DataSpace att_dspace(1, &att_dim);
-    H5::Attribute att_indenter_x = dataset.createAttribute("indenter_x", H5::PredType::NATIVE_DOUBLE, att_dspace);
-    H5::Attribute att_indenter_y = dataset.createAttribute("indenter_y", H5::PredType::NATIVE_DOUBLE, att_dspace);
-    H5::Attribute att_SimulationTime = dataset.createAttribute("SimulationTime", H5::PredType::NATIVE_DOUBLE, att_dspace);
-    H5::Attribute att_GridX = dataset.createAttribute("GridX", H5::PredType::NATIVE_INT, att_dspace);
-    H5::Attribute att_GridY = dataset.createAttribute("GridY", H5::PredType::NATIVE_INT, att_dspace);
-    H5::Attribute att_nPts = dataset.createAttribute("nPts", H5::PredType::NATIVE_INT, att_dspace);
-    H5::Attribute att_nPtsPitch = dataset.createAttribute("nPtsPitch", H5::PredType::NATIVE_INT64, att_dspace);
 
-    H5::Attribute att_UpdateEveryNthStep = dataset.createAttribute("UpdateEveryNthStep", H5::PredType::NATIVE_INT, att_dspace);
-    H5::Attribute att_n_indenter_subdivisions = dataset.createAttribute("n_indenter_subdivisions", H5::PredType::NATIVE_INT, att_dspace);
-    H5::Attribute att_cellsize = dataset.createAttribute("cellsize", H5::PredType::NATIVE_DOUBLE, att_dspace);
-    H5::Attribute att_IndDiameter = dataset.createAttribute("IndDiameter", H5::PredType::NATIVE_DOUBLE, att_dspace);
-    H5::Attribute att_InitialTimeStep = dataset.createAttribute("InitialTimeStep", H5::PredType::NATIVE_DOUBLE, att_dspace);
-    H5::Attribute att_SetupType = dataset.createAttribute("SetupType", H5::PredType::NATIVE_INT, att_dspace);
-    H5::Attribute att_Volume = dataset.createAttribute("Volume", H5::PredType::NATIVE_DOUBLE, att_dspace);
-
-    att_indenter_x.write(H5::PredType::NATIVE_DOUBLE, &model->prms.indenter_x);
-    att_indenter_y.write(H5::PredType::NATIVE_DOUBLE, &model->prms.indenter_y);
-    att_SimulationTime.write(H5::PredType::NATIVE_DOUBLE, &model->prms.SimulationTime);
-    att_GridX.write(H5::PredType::NATIVE_INT, &model->prms.GridX);
-    att_GridY.write(H5::PredType::NATIVE_INT, &model->prms.GridY);
-    att_nPts.write(H5::PredType::NATIVE_INT, &model->prms.nPts);
-    att_nPtsPitch.write(H5::PredType::NATIVE_INT64, &model->prms.nPtsPitch);
-
-    att_UpdateEveryNthStep.write(H5::PredType::NATIVE_INT, &model->prms.UpdateEveryNthStep);
-    att_n_indenter_subdivisions.write(H5::PredType::NATIVE_INT, &model->prms.n_indenter_subdivisions);
-    att_cellsize.write(H5::PredType::NATIVE_DOUBLE, &model->prms.cellsize);
-    att_IndDiameter.write(H5::PredType::NATIVE_DOUBLE, &model->prms.IndDiameter);
-    att_InitialTimeStep.write(H5::PredType::NATIVE_DOUBLE, &model->prms.InitialTimeStep);
-    att_SetupType.write(H5::PredType::NATIVE_INT, &model->prms.SetupType);
-    att_Volume.write(H5::PredType::NATIVE_DOUBLE, &model->prms.Volume);
-}
 
 
 

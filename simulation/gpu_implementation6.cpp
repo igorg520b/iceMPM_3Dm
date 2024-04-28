@@ -340,6 +340,9 @@ void GPU_Implementation6::allocate_arrays()
 
     const unsigned points_requested_per_partition = (nPts/partitions.size()) * (1 + model->prms.ExtraSpaceForIncomingPoints);
     for(GPU_Partition_3D &p : partitions) p.allocate(points_requested_per_partition, GridX_size);
+
+    indenter_sensor_total.resize(model->prms.IndenterSubdivisions*model->prms.GridZ*SimParams3D::dim);
+    std::fill(indenter_sensor_total.begin(), indenter_sensor_total.end(), 0.);
 }
 
 
@@ -377,6 +380,7 @@ void GPU_Implementation6::transfer_from_device()
 
     // wait until everything is copied to host
     indenter_force.setZero();
+    memset(indenter_sensor_total.data(), 0, indenter_sensor_total.size()*sizeof(double));
     for(int i=0;i<partitions.size();i++)
     {
         GPU_Partition_3D &p = partitions[i];
@@ -390,7 +394,11 @@ void GPU_Implementation6::transfer_from_device()
 
         for(int j=0; j<model->prms.IndenterSubdivisions; j++)
             for(int k=0;k<3;k++)
-                indenter_force[k] += p.host_side_indenter_force_accumulator[j*SimParams3D::dim+k];
+            {
+                int idx = j*SimParams3D::dim+k;
+                indenter_force[k] += p.host_side_indenter_force_accumulator[idx];
+                indenter_sensor_total[idx] += p.host_side_indenter_force_accumulator[idx];
+            }
     }
 
     int count = 0;

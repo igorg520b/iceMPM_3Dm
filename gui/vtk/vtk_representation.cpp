@@ -148,23 +148,23 @@ void VisualRepresentation::SynchronizeTopology()
     indenterSource->SetHeight(model->prms.GridZ * model->prms.cellsize);
     indenterSource->Update();
 
-/*
-    int gx = model->prms.GridXTotal;
-    int gy = model->prms.GridY;
-    double &h = model->prms.cellsize;
-    structuredGrid->SetDimensions(gx, gy, 1);
 
-    grid_points->SetNumberOfPoints(gx*gy);
-    for(int idx_y=0; idx_y<gy; idx_y++)
+    int gx = model->prms.GridXTotal;
+    int gz = model->prms.GridZ;
+    double &h = model->prms.cellsize;
+    structuredGrid->SetDimensions(gx, 1, gz);
+
+    grid_points->SetNumberOfPoints(gx*gz);
+    for(int idx_z=0; idx_z<gz; idx_z++)
         for(int idx_x=0; idx_x<gx; idx_x++)
         {
             float x = idx_x * h;
-            float y = idx_y * h;
-            double pt_pos[3] {x, y, -2.0};
-            grid_points->SetPoint((vtkIdType)(idx_x+idx_y*gx), pt_pos);
+            float z = idx_z * h;
+            double pt_pos[3] {x, 0, z};
+            grid_points->SetPoint((vtkIdType)(idx_x+idx_z*gx), pt_pos);
         }
     structuredGrid->SetPoints(grid_points);
-
+/*
     int nPartitions = model->gpu.partitions.size();
     partitionsGrid->SetDimensions(nPartitions+1, 2, 1);
     partitions_grid_points->SetNumberOfPoints((nPartitions+1)*2);

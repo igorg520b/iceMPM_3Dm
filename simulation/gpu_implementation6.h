@@ -28,6 +28,7 @@ public:
     std::vector<GPU_Partition_3D> partitions;
     HostSideSOA hssoa;
     Eigen::Vector3d indenter_force;
+    std::vector<double> indenter_sensor_total;
 
     std::function<void()> transfer_completion_callback;
 
