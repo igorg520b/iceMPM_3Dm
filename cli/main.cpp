@@ -67,7 +67,10 @@ int main(int argc, char** argv)
             int snapshot_number = model.prms.AnimationFrameNumber();
             if(request_terminate) { model.UnlockCycleMutex(); std::cout << "snapshot aborted\n"; return; }
             spdlog::info("cycle callback {}; ", snapshot_number);
-            //snapshot.SaveSnapshot(snapshot_directory);
+
+            if(model.prms.AnimationFrameNumber() % model.prms.SnapshotPeriod == 0)
+                snapshot.SaveSnapshot(snapshot_directory, false);
+
             model.UnlockCycleMutex();
             spdlog::info("callback {} done", snapshot_number);
         });

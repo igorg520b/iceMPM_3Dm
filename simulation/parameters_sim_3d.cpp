@@ -154,3 +154,105 @@ void SimParams3D::ComputeCamClayParams()
     NACC_beta = IceTensileStrength/IceCompressiveStrength;
 }
 
+
+void SimParams3D::SaveParametersAsAttributes(H5::DataSet &ds)
+{
+    hsize_t att_dim = 1;
+    H5::DataSpace att_dspace(1, &att_dim);
+
+    H5::Attribute att_SetupType = ds.createAttribute("SetupType", H5::PredType::NATIVE_INT, att_dspace);
+    att_SetupType.write(H5::PredType::NATIVE_INT, &SetupType);
+
+    // points, grid, and indenter
+    H5::Attribute att_nPtsTotal = ds.createAttribute("nPtsTotal", H5::PredType::NATIVE_INT, att_dspace);
+    H5::Attribute att_GridX = ds.createAttribute("GridXTotal", H5::PredType::NATIVE_INT, att_dspace);
+    H5::Attribute att_GridY = ds.createAttribute("GridY", H5::PredType::NATIVE_INT, att_dspace);
+    H5::Attribute att_GridZ = ds.createAttribute("GridZ", H5::PredType::NATIVE_INT, att_dspace);
+    H5::Attribute att_cellsize = ds.createAttribute("cellsize", H5::PredType::NATIVE_DOUBLE, att_dspace);
+    H5::Attribute att_IndenterSubdivisions = ds.createAttribute("IndenterSubdivisions", H5::PredType::NATIVE_INT, att_dspace);
+
+    att_nPtsTotal.write(H5::PredType::NATIVE_INT, &nPtsTotal);
+    att_GridX.write(H5::PredType::NATIVE_INT, &GridXTotal);
+    att_GridY.write(H5::PredType::NATIVE_INT, &GridY);
+    att_GridZ.write(H5::PredType::NATIVE_INT, &GridZ);
+    att_cellsize.write(H5::PredType::NATIVE_DOUBLE, &cellsize);
+    att_IndenterSubdivisions.write(H5::PredType::NATIVE_INT, &IndenterSubdivisions);
+
+    // time
+    H5::Attribute att_InitialTimeStep = ds.createAttribute("InitialTimeStep", H5::PredType::NATIVE_DOUBLE, att_dspace);
+    H5::Attribute att_SimulationEndTime = ds.createAttribute("SimulationEndTime", H5::PredType::NATIVE_DOUBLE, att_dspace);
+    H5::Attribute att_SimulationTime = ds.createAttribute("SimulationTime", H5::PredType::NATIVE_DOUBLE, att_dspace);
+    H5::Attribute att_UpdateEveryNthStep = ds.createAttribute("UpdateEveryNthStep", H5::PredType::NATIVE_INT, att_dspace);
+    H5::Attribute att_SnapshotPeriod = ds.createAttribute("SnapshotPeriod", H5::PredType::NATIVE_INT, att_dspace);
+    H5::Attribute att_SimulationStep = ds.createAttribute("SimulationStep", H5::PredType::NATIVE_INT, att_dspace);
+    att_InitialTimeStep.write(H5::PredType::NATIVE_DOUBLE, &InitialTimeStep);
+    att_SimulationEndTime.write(H5::PredType::NATIVE_DOUBLE, &SimulationEndTime);
+    att_SimulationTime.write(H5::PredType::NATIVE_DOUBLE, &SimulationTime);
+    att_UpdateEveryNthStep.write(H5::PredType::NATIVE_INT, &UpdateEveryNthStep);
+    att_SnapshotPeriod.write(H5::PredType::NATIVE_INT, &SnapshotPeriod);
+    att_SimulationStep.write(H5::PredType::NATIVE_INT, &SimulationStep);
+
+    // physical parameters
+    H5::Attribute att_Gravity = ds.createAttribute("Gravity", H5::PredType::NATIVE_DOUBLE, att_dspace);
+    H5::Attribute att_Density = ds.createAttribute("Density", H5::PredType::NATIVE_DOUBLE, att_dspace);
+    H5::Attribute att_PoissonsRatio = ds.createAttribute("PoissonsRatio", H5::PredType::NATIVE_DOUBLE, att_dspace);
+    H5::Attribute att_YoungsModulus = ds.createAttribute("YoungsModulus", H5::PredType::NATIVE_DOUBLE, att_dspace);
+    H5::Attribute att_IceCompressiveStrength = ds.createAttribute("IceCompressiveStrength", H5::PredType::NATIVE_DOUBLE, att_dspace);
+    H5::Attribute att_IceTensileStrength = ds.createAttribute("IceTensileStrength", H5::PredType::NATIVE_DOUBLE, att_dspace);
+    H5::Attribute att_IceTensileStrength2 = ds.createAttribute("IceTensileStrength2", H5::PredType::NATIVE_DOUBLE, att_dspace);
+    H5::Attribute att_IceShearStrength = ds.createAttribute("IceShearStrength", H5::PredType::NATIVE_DOUBLE, att_dspace);
+    H5::Attribute att_DP_tan_phi = ds.createAttribute("DP_tan_phi", H5::PredType::NATIVE_DOUBLE, att_dspace);
+    H5::Attribute att_DP_threshold_p = ds.createAttribute("DP_threshold_p", H5::PredType::NATIVE_DOUBLE, att_dspace);
+    H5::Attribute att_GrainVariability = ds.createAttribute("GrainVariability", H5::PredType::NATIVE_DOUBLE, att_dspace);
+
+    att_Gravity.write(H5::PredType::NATIVE_DOUBLE, &Gravity);
+    att_Density.write(H5::PredType::NATIVE_DOUBLE, &Density);
+    att_PoissonsRatio.write(H5::PredType::NATIVE_DOUBLE, &PoissonsRatio);
+    att_YoungsModulus.write(H5::PredType::NATIVE_DOUBLE, &YoungsModulus);
+    att_IceCompressiveStrength.write(H5::PredType::NATIVE_DOUBLE, &IceCompressiveStrength);
+    att_IceTensileStrength.write(H5::PredType::NATIVE_DOUBLE, &IceTensileStrength);
+    att_IceTensileStrength2.write(H5::PredType::NATIVE_DOUBLE, &IceTensileStrength2);
+    att_IceShearStrength.write(H5::PredType::NATIVE_DOUBLE, &IceShearStrength);
+    att_DP_tan_phi.write(H5::PredType::NATIVE_DOUBLE, &DP_tan_phi);
+    att_GrainVariability.write(H5::PredType::NATIVE_DOUBLE, &GrainVariability);
+
+
+    // indenter: location, diameter, and velocity
+    H5::Attribute att_indenter_x = ds.createAttribute("indenter_x", H5::PredType::NATIVE_DOUBLE, att_dspace);
+    H5::Attribute att_indenter_y = ds.createAttribute("indenter_y", H5::PredType::NATIVE_DOUBLE, att_dspace);
+    H5::Attribute att_IndDiameter = ds.createAttribute("IndDiameter", H5::PredType::NATIVE_DOUBLE, att_dspace);
+    H5::Attribute att_IndVelocity = ds.createAttribute("IndVelocity", H5::PredType::NATIVE_DOUBLE, att_dspace);
+
+    att_indenter_x.write(H5::PredType::NATIVE_DOUBLE, &indenter_x);
+    att_indenter_y.write(H5::PredType::NATIVE_DOUBLE, &indenter_y);
+    att_IndDiameter.write(H5::PredType::NATIVE_DOUBLE, &IndDiameter);
+    att_IndVelocity.write(H5::PredType::NATIVE_DOUBLE, &IndVelocity);
+
+
+    // parameters of the points / total volume of the solid
+    H5::Attribute att_ParticleVolume = ds.createAttribute("ParticleVolume", H5::PredType::NATIVE_DOUBLE, att_dspace);
+    H5::Attribute att_ParticleMass = ds.createAttribute("ParticleMass", H5::PredType::NATIVE_DOUBLE, att_dspace);
+    H5::Attribute att_Volume = ds.createAttribute("Volume", H5::PredType::NATIVE_DOUBLE, att_dspace);
+
+    att_ParticleVolume.write(H5::PredType::NATIVE_DOUBLE, &ParticleVolume);
+    att_ParticleMass.write(H5::PredType::NATIVE_DOUBLE, &ParticleMass);
+    att_Volume.write(H5::PredType::NATIVE_DOUBLE, &Volume);
+
+
+    // multi-GPU parameters
+    H5::Attribute att_nPartitions = ds.createAttribute("nPartitions", H5::PredType::NATIVE_INT, att_dspace);
+    H5::Attribute att_GridHaloSize = ds.createAttribute("GridHaloSize", H5::PredType::NATIVE_INT, att_dspace);
+    H5::Attribute att_PointTransferFrequency = ds.createAttribute("PointTransferFrequency", H5::PredType::NATIVE_INT, att_dspace);
+    H5::Attribute att_ExtraSpaceForIncomingPoints = ds.createAttribute("ExtraSpaceForIncomingPoints", H5::PredType::NATIVE_DOUBLE, att_dspace);
+    H5::Attribute att_PointsTransferBufferFraction = ds.createAttribute("PointsTransferBufferFraction", H5::PredType::NATIVE_DOUBLE, att_dspace);
+    H5::Attribute att_RebalanceThresholdFreeSpaceRemaining = ds.createAttribute("RebalanceThresholdFreeSpaceRemaining", H5::PredType::NATIVE_DOUBLE, att_dspace);
+    H5::Attribute att_RebalanceThresholdDisabledPercentage = ds.createAttribute("RebalanceThresholdDisabledPercentage", H5::PredType::NATIVE_DOUBLE, att_dspace);
+
+    att_nPartitions.write(H5::PredType::NATIVE_INT, &nPartitions);
+    att_GridHaloSize.write(H5::PredType::NATIVE_INT, &GridHaloSize);
+    att_PointTransferFrequency.write(H5::PredType::NATIVE_INT, &PointTransferFrequency);
+    att_ExtraSpaceForIncomingPoints.write(H5::PredType::NATIVE_DOUBLE, &ExtraSpaceForIncomingPoints);
+    att_PointsTransferBufferFraction.write(H5::PredType::NATIVE_DOUBLE, &PointsTransferBufferFraction);
+    att_RebalanceThresholdFreeSpaceRemaining.write(H5::PredType::NATIVE_DOUBLE, &RebalanceThresholdFreeSpaceRemaining);
+    att_RebalanceThresholdDisabledPercentage.write(H5::PredType::NATIVE_DOUBLE, &RebalanceThresholdDisabledPercentage);
+}

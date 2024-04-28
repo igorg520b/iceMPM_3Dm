@@ -17,7 +17,7 @@ public:
 
     void LoadRawPoints(std::string fileName);
     void SaveSnapshot(std::string outputDirectory, bool compress = false);
-    void SaveParametersAsAttributes(H5::DataSet &dataset);
+
 
 
 //    void ReadSnapshot(std::string fileName); // return file number
