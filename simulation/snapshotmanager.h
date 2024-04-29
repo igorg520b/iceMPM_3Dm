@@ -17,11 +17,7 @@ public:
 
     void LoadRawPoints(std::string fileName);
     void SaveSnapshot(std::string outputDirectory, bool compress = false);
-
-
-
-//    void ReadSnapshot(std::string fileName); // return file number
-//    void SavePQ(std::string directory);
+    void ReadSnapshot(std::string fileName, int partitions);
 
     const std::string directory_snapshots = "snapshots";
     const std::string directory_pq = "pq";

@@ -246,17 +246,11 @@ void MainWindow::open_snapshot_triggered()
 {
     QString qFileName = QFileDialog::getOpenFileName(this, "Open Simulation Snapshot", QDir::currentPath(), "HDF5 Files (*.h5)");
     if(qFileName.isNull())return;
-    OpenSnapshot(qFileName);
-}
 
-void MainWindow::OpenSnapshot(QString fileName)
-{
-    /*
-    snapshot.ReadSnapshot(fileName.toStdString());
+    snapshot.ReadSnapshot(qFileName.toStdString(), -1);
     representation.SynchronizeTopology();
     updateGUI();
     pbrowser->setActiveObject(params);
-*/
 }
 
 

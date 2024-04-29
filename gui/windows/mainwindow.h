@@ -89,8 +89,6 @@ private:
     void save_binary_data();
     void restore_settings();
 
-    void OpenSnapshot(QString fileName);
-
     BackgroundWorker *worker;
     VisualRepresentation representation;
     SnapshotManager snapshot;

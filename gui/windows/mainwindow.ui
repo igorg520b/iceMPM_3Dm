@@ -88,8 +88,8 @@
   </action>
   <action name="action_quit">
    <property name="icon">
-    <iconset>
-     <normaloff>:/gui/icons/but-quit.png</normaloff>:/gui/icons/but-quit.png</iconset>
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/but-quit.png</normaloff>:/icons/but-quit.png</iconset>
    </property>
    <property name="text">
     <string>Quit</string>
@@ -100,8 +100,8 @@
   </action>
   <action name="actionOpen">
    <property name="icon">
-    <iconset>
-     <normaloff>:/gui/icons/open-file-folder-svgrepo-com.svg</normaloff>:/gui/icons/open-file-folder-svgrepo-com.svg</iconset>
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/folder-open.svg</normaloff>:/icons/folder-open.svg</iconset>
    </property>
    <property name="text">
     <string>Open Snapshot...</string>
@@ -115,9 +115,9 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset>
-     <normaloff>:/gui/icons/media-playback-start.svg</normaloff>
-     <normalon>:/gui/icons/media-playback-pause.svg</normalon>:/gui/icons/media-playback-start.svg</iconset>
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/media-playback-start.svg</normaloff>
+     <normalon>:/icons/media-playback-pause.svg</normalon>:/icons/media-playback-start.svg</iconset>
    </property>
    <property name="text">
     <string>Start/Pause</string>
@@ -143,6 +143,8 @@
    </property>
   </action>
  </widget>
- <resources/>
+ <resources>
+  <include location="../icons.qrc"/>
+ </resources>
  <connections/>
 </ui>

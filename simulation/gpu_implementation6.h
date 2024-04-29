@@ -36,7 +36,8 @@ public:
     void split_hssoa_into_partitions();     // perform grid and point partitioning
     void transfer_ponts_to_device();
 
-    void initialize_and_enable_peer_access();
+    void enable_peer_access();
+    void initialize();
     void transfer_from_device();
 
     void synchronize(); // call before terminating the main thread

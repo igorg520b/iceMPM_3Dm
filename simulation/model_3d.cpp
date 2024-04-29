@@ -6,8 +6,6 @@
 Model3D::Model3D()
 {
     log_timing = spdlog::basic_logger_mt("timings", "logs/timings.csv", true);
-//    spdlog::get("timings")->set_pattern("[%H:%M:%S],%v");
-
     log_indenter_force = spdlog::basic_logger_mt("indenter_force", "logs/indenter_force.csv", true);
 
     auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/multisink.txt", true);
@@ -19,6 +17,7 @@ Model3D::Model3D()
     prms.Reset();
     gpu.model = this;
     GPU_Partition_3D::prms = &this->prms;
+    gpu.enable_peer_access();
     spdlog::info("Model constructor");
 }
 

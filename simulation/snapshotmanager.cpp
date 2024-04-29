@@ -135,7 +135,7 @@ void SnapshotManager::LoadRawPoints(std::string fileName)
     model->prms.ComputeHelperVariables();
 
     // allocate GPU partitions
-    model->gpu.initialize_and_enable_peer_access();
+    model->gpu.initialize();
     model->gpu.split_hssoa_into_partitions();
     model->gpu.allocate_arrays();
     model->gpu.transfer_ponts_to_device();
@@ -146,112 +146,50 @@ void SnapshotManager::LoadRawPoints(std::string fileName)
     spdlog::info("LoadRawPoints done; nPoitns {}",nPoints);
 }
 
-/*
 
-void icy::SnapshotManager::SavePQ(std::string outputDirectory)
+void SnapshotManager::ReadSnapshot(std::string fileName, int partitions)
 {
-
-    std::filesystem::path odp(outputDirectory);
-    if(!std::filesystem::is_directory(odp) || !std::filesystem::exists(odp)) std::filesystem::create_directory(odp);
-    std::filesystem::path odp2(outputDirectory+"/"+directory_pq);
-    if(!std::filesystem::is_directory(odp2) || !std::filesystem::exists(odp2)) std::filesystem::create_directory(odp2);
-
-    const int current_frame_number = model->prms.AnimationFrameNumber();
-    char fileName[20];
-    snprintf(fileName, sizeof(fileName), "pq%05d.h5", current_frame_number);
-    std::string filePath = outputDirectory + "/" + directory_pq + "/" + fileName;
-    spdlog::info("saving NC frame {} to file {}", current_frame_number, filePath);
-
-
-    const int &n = model->prms.nPtsTotal;
-    buffer1.clear();
-    buffer1.reserve(n*2);
-    buffer2.clear();
-    buffer2.reserve(n*2);
-
-    for(int i=0;i<n;i++)
-    {
-        auto [p,q] = icy::Point::getPQ(model->gpu.tmp_transfer_buffer, model->prms.nPtsPitch,i);
-        uint8_t crushed = icy::Point::getCrushedStatus(model->gpu.tmp_transfer_buffer, model->prms.nPtsPitch,i);
-        if(crushed) {buffer1.push_back(p);buffer1.push_back(q);}
-        else {buffer2.push_back(p);buffer2.push_back(q);}
-    }
-
-    H5::H5File file(filePath, H5F_ACC_TRUNC);
-
-    hsize_t dims_pq_intact[2] = {buffer2.size()/2, 2};
-    H5::DataSpace dataspace_pq_intact(2, dims_pq_intact);
-    H5::DataSet dataset_pq_intact = file.createDataSet("PQ_intact", H5::PredType::NATIVE_DOUBLE, dataspace_pq_intact);
-    dataset_pq_intact.write(buffer2.data(), H5::PredType::NATIVE_DOUBLE);
-    SaveParametersAsAttributes(dataset_pq_intact);
-
-    hsize_t dims_pq_crushed[2] = {buffer1.size()/2, 2};
-    H5::DataSpace dataspace_pq_crushed(2, dims_pq_crushed);
-    H5::DataSet dataset_pq_crushed = file.createDataSet("PQ_crushed", H5::PredType::NATIVE_DOUBLE, dataspace_pq_crushed);
-
-    dataset_pq_crushed.write(buffer1.data(), H5::PredType::NATIVE_DOUBLE);
-    file.close();
-
-}
-
-
-
-void icy::SnapshotManager::SaveSnapshot(std::string outputDirectory)
-{
-
-
-
-
-
-//    hsize_t att_dim = 1;
-//    H5::DataSpace att_dspace(1, &att_dim);
-//    H5::Attribute att = dataset_points.createAttribute("full_data", H5::PredType::NATIVE_INT,att_dspace);
-//    att.write(H5::PredType::NATIVE_INT, &full_data);
-
-
-}
-
-
-
-
-
-
-void icy::SnapshotManager::ReadSnapshot(std::string fileName)
-{
-    if(!std::filesystem::exists(fileName)) return -1;
-
-    std::string numbers = fileName.substr(fileName.length()-8,5);
-    int idx = std::stoi(numbers);
-    spdlog::info("reading snapshot {}", idx);
+    if(!std::filesystem::exists(fileName)) return;
+    spdlog::info("reading snapshot {}", fileName);
 
     H5::H5File file(fileName, H5F_ACC_RDONLY);
 
-    // read and process SimParams
-    H5::DataSet dataset_params = file.openDataSet("Params");
-    hsize_t dims_params = 0;
-    dataset_params.getSpace().getSimpleExtentDims(&dims_params, NULL);
-    if(dims_params != sizeof(icy::SimParams)) throw std::runtime_error("ReadSnapshot: SimParams size mismatch");
+    H5::DataSet dataset_points = file.openDataSet("Points");
+    model->prms.ReadParametersFromAttributes(dataset_points);
+    if(partitions > 0)
+    {
+        model->prms.nPartitions = partitions;
+        model->prms.ComputeHelperVariables();
+    }
 
-    icy::SimParams tmp_params;
-    dataset_params.read(&tmp_params, H5::PredType::NATIVE_B8);
-
-    if(tmp_params.nGridPitch != model->prms.nGridPitch || tmp_params.nPtsPitch != model->prms.nPtsPitch)
-        model->gpu.cuda_allocate_arrays(tmp_params.nGridPitch,tmp_params.nPtsPitch);
-    double ParticleViewSize = model->prms.ParticleViewSize;
-    model->prms = tmp_params;
-    model->prms.ParticleViewSize = ParticleViewSize;
+    // allocate HSOA
+    unsigned capacity, size;
+    H5::Attribute att_capacity = dataset_points.openAttribute("HSSOA_capacity");
+    H5::Attribute att_size = dataset_points.openAttribute("HSSOA_size");
+    att_capacity.read(H5::PredType::NATIVE_INT, &capacity);
+    att_size.read(H5::PredType::NATIVE_INT, &size);
+    model->gpu.hssoa.Allocate(capacity);
+    model->gpu.hssoa.size = size;
 
     // read point data
-    H5::DataSet dataset_points = file.openDataSet("Points");
-//    H5::Attribute att = dataset_points.openAttribute("full_data");
-//    int full_data;
-//    att.read(H5::PredType::NATIVE_INT, &full_data);
+    dataset_points.read(model->gpu.hssoa.host_buffer, H5::PredType::NATIVE_DOUBLE);
 
-    dataset_points.read(model->gpu.tmp_transfer_buffer,H5::PredType::NATIVE_DOUBLE);
-
-    model->gpu.transfer_ponts_to_host_finalize(model->points);
     file.close();
-    return idx;
-}
-*/
 
+    // distribute into partitions
+    model->gpu.hssoa.RemoveDisabledAndSort(model->prms.cellsize_inv, model->prms.GridY, model->prms.GridZ);
+
+    // allocate GPU partitions
+    model->gpu.initialize();
+    model->gpu.split_hssoa_into_partitions();
+    model->gpu.allocate_arrays();
+    model->gpu.transfer_ponts_to_device();
+
+    model->max_points_transferred = 0;
+    model->SyncTopologyRequired = true;
+
+    model->Prepare();
+
+    spdlog::info("SnapshotManager::ReadSnapshot() done");
+    return;
+}

@@ -87,6 +87,7 @@ public:
     void Reset();
     std::string ParseFile(std::string fileName);
     void SaveParametersAsAttributes(H5::DataSet &dataset);
+    void ReadParametersFromAttributes(H5::DataSet &dataset);
 
     void ComputeLame();
     void ComputeCamClayParams();

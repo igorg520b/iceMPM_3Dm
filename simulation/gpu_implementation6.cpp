@@ -216,27 +216,12 @@ void GPU_Implementation6::record_timings(const bool enablePointTransfer)
 
 // ==========================================================================
 
-
-
-
-void GPU_Implementation6::initialize_and_enable_peer_access()
+void GPU_Implementation6::enable_peer_access()
 {
-    const int &nPartitions = model->prms.nPartitions;
-
-    // count available GPUs
     int deviceCount = 0;
     cudaError_t err = cudaGetDeviceCount(&deviceCount);
     if (err != cudaSuccess) throw std::runtime_error("cudaGetDeviceCount error");
     if(deviceCount == 0) throw std::runtime_error("No avaialble CUDA devices");
-
-    partitions.clear();
-    partitions.resize(nPartitions);
-
-    for(int i=0;i<nPartitions;i++)
-    {
-        GPU_Partition_3D &p = partitions[i];
-        p.initialize(i%deviceCount, i);
-    }
 
     if(deviceCount == 2)
     {
@@ -278,6 +263,28 @@ void GPU_Implementation6::initialize_and_enable_peer_access()
                 throw std::runtime_error("initialize_and_enable_peer_access cudaDeviceEnablePeerAccess");
             }
         }
+    }
+}
+
+
+
+void GPU_Implementation6::initialize()
+{
+    const int &nPartitions = model->prms.nPartitions;
+
+    // count available GPUs
+    int deviceCount = 0;
+    cudaError_t err = cudaGetDeviceCount(&deviceCount);
+    if (err != cudaSuccess) throw std::runtime_error("cudaGetDeviceCount error");
+    if(deviceCount == 0) throw std::runtime_error("No avaialble CUDA devices");
+
+    partitions.clear();
+    partitions.resize(nPartitions);
+
+    for(int i=0;i<nPartitions;i++)
+    {
+        GPU_Partition_3D &p = partitions[i];
+        p.initialize(i%deviceCount, i);
     }
 }
 

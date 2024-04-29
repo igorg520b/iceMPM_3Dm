@@ -36,6 +36,7 @@ int main(int argc, char** argv)
         ("file", "Configuration file", cxxopts::value<std::string>())
         ("s,snapshot", "Only write the starting snapshot", cxxopts::value<bool>()->default_value("false"))
         ("r,resume", "Resume from a full snapshot (.h5) file", cxxopts::value<std::string>())
+        ("p,partitions", "Number of partitions (if different from snapshot)", cxxopts::value<int>()->default_value("-1"))
         ;
     options.parse_positional({"file"});
 
@@ -44,6 +45,10 @@ int main(int argc, char** argv)
     if(option_parse_result.count("resume"))
     {
         // resume from snapshot
+        std::string snapshot_file = option_parse_result["resume"].as<std::string>();
+        int partitions = option_parse_result["partitions"].as<int>();
+        spdlog::info("resuming snapshot {}",snapshot_file);
+        snapshot.ReadSnapshot(snapshot_file, partitions);
     }
     else if(option_parse_result.count("file"))
     {
