@@ -9,7 +9,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 option(BUILD_GUI_VERSION "Build the Qt version" OFF)
 option(BUILD_GENERATOR "Build generator" OFF)
-option(BUILD_CLI_VERSION "Build CLI version" OFF)
+option(BUILD_CLI_VERSION "Build CLI version" ON)
 
 if(BUILD_GUI_VERSION)
     set(CMAKE_AUTOUIC ON)

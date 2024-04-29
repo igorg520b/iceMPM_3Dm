@@ -99,8 +99,8 @@ __global__ void partition_kernel_receive_halos_left(const int haloElementCount, 
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if(idx >= haloElementCount) return;
 
-    const int &gridY = gprms.GridY;
-    const int &gridZ = gprms.GridZ;
+//    const int &gridY = gprms.GridY;
+//    const int &gridZ = gprms.GridZ;
 
     for(int i=0; i<SimParams3D::nGridArrays; i++)
     {
