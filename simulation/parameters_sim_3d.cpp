@@ -125,7 +125,9 @@ std::string SimParams3D::ParseFile(std::string fileName)
     if(doc.HasMember("nPartitions")) nPartitions = doc["nPartitions"].GetInt();
 
     if(doc.HasMember("ExtraSpaceForIncomingPoints")) ExtraSpaceForIncomingPoints = doc["ExtraSpaceForIncomingPoints"].GetDouble();
-
+    if(doc.HasMember("RebalanceThresholdFreeSpaceRemaining")) RebalanceThresholdFreeSpaceRemaining = doc["RebalanceThresholdFreeSpaceRemaining"].GetDouble();
+    if(doc.HasMember("RebalanceThresholdDisabledPercentage")) RebalanceThresholdDisabledPercentage = doc["RebalanceThresholdDisabledPercentage"].GetDouble();
+    if(doc.HasMember("PointsTransferBufferFraction")) PointsTransferBufferFraction = doc["PointsTransferBufferFraction"].GetDouble();
 
     ComputeCamClayParams();
     ComputeHelperVariables();

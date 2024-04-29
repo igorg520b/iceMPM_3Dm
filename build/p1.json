@@ -4,7 +4,7 @@
 "GridHaloSize":15,
 "ExtraSpaceForIncomingPoints":0.2,
 
-"InitialTimeStep":3.0e-5,
+"InitialTimeStep":4.0e-5,
 "ParticleViewSize":5.0,
 "GridX":64,
 "GridY":27,

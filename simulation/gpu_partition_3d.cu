@@ -125,7 +125,7 @@ void GPU_Partition_3D::allocate(int n_points_capacity, int gx)
     err = cudaMalloc(&device_side_utility_data, utility_data_size*sizeof(int));
     if(err != cudaSuccess) throw std::runtime_error("GPU_Partition allocate space for utility data");
 
-    spdlog::info("allocate: P {}-{}:  GridPitch/(YZ) {}; Pts {}; PtsTransfer {}; total {:.2} Mb",
+    spdlog::info("allocate: P {}-{}:  GridPitch/(YZ) {}; Pts {}; PtsTransfer {}; total {:.2f} Mb",
                  PartitionID, Device,
                  nGridPitch/(prms->GridY*prms->GridZ), nPtsPitch,
                  prms->VectorCapacity_transfer, (double)total_device/(1024*1024));

@@ -22,9 +22,12 @@ Edit CMakeLists.txt to select the compute capability of the NVIDA GPU (default i
 
 A simulation can be started with a JSON configuration file via:
 
-> cm3 --simulate startfile.json
+> cm3 startfile.json
 
 A simulation can be "resumed" from a full snapshot via:
 
-> cm3 --resume snapshot_file.h5
+> cm3 --resume snapshot_file.h5 --partitions 4
 
+To create an initial snapshot (.h5) from a JSON file:
+
+> cm3 startfile.json --snapshot
