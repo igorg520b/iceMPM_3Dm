@@ -25,6 +25,8 @@ void SnapshotManager::SaveSnapshot(std::string outputDirectory, bool compress)
     std::string filePath = outputDirectory + "/" + directory_snapshots + "/" + fileName;
     spdlog::info("saving NC frame {} to file {}", current_frame_number, filePath);
 
+    // always squeeze/sort before saving
+    model->gpu.hssoa.RemoveDisabledAndSort(model->prms.cellsize_inv, model->prms.GridY, model->prms.GridZ);
 
     H5::H5File file(filePath, H5F_ACC_TRUNC);
 
@@ -177,7 +179,6 @@ void SnapshotManager::ReadSnapshot(std::string fileName, int partitions)
     file.close();
 
     // distribute into partitions
-    model->gpu.hssoa.RemoveDisabledAndSort(model->prms.cellsize_inv, model->prms.GridY, model->prms.GridZ);
 
     // allocate GPU partitions
     model->gpu.initialize();
