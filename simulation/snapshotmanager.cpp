@@ -174,7 +174,9 @@ void SnapshotManager::ReadSnapshot(std::string fileName, int partitions)
     model->gpu.hssoa.size = size;
 
     // read point data
+    spdlog::info("reading the points buffer");
     dataset_points.read(model->gpu.hssoa.host_buffer, H5::PredType::NATIVE_DOUBLE);
+    spdlog::info("reading poings buffer - done");
 
     file.close();
 
