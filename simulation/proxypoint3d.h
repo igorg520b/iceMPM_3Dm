@@ -19,6 +19,7 @@ struct ProxyPoint3D
     double getValue(size_t valueIdx) const;   // valueIdx < nArrays
     void setValue(size_t valueIdx, double value);
     Eigen::Vector3d getPos() const;
+    Eigen::Vector3d getVelocity() const;
     bool getCrushedStatus();
     bool getDisabledStatus();
     uint16_t getGrain();

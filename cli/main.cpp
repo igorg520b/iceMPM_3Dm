@@ -19,7 +19,8 @@ int main(int argc, char** argv)
     Model3D model;
     SnapshotManager snapshot;
 
-    std::string snapshot_directory = "cm_snapshots";
+    std::string snapshot_directory = "_snapshots";
+    std::string animation_frame_directory = "_snapshots_animation";
     std::thread snapshot_thread;
     std::atomic<bool> request_terminate = false;
     std::atomic<bool> request_full_snapshot = false;
@@ -75,6 +76,9 @@ int main(int argc, char** argv)
 
             if(model.prms.AnimationFrameNumber() % model.prms.SnapshotPeriod == 0)
                 snapshot.SaveSnapshot(snapshot_directory, false);
+
+            if(model.prms.AnimationFrameNumber() % 100 == 0) snapshot.previous_frame_exists = false;
+            snapshot.SaveFrame(animation_frame_directory);
 
             model.UnlockCycleMutex();
             spdlog::info("callback {} done", snapshot_number);

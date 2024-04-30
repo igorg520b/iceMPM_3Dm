@@ -53,6 +53,23 @@ Eigen::Vector3d ProxyPoint3D::getPos() const
     return result;
 }
 
+Eigen::Vector3d ProxyPoint3D::getVelocity() const
+{
+    Eigen::Vector3d result;
+    if(isReference)
+    {
+        for(int i=0; i<SimParams3D::dim;i++)
+            result[i] = soa[pos + pitch*(SimParams3D::velx+i)];
+    }
+    else
+    {
+        for(int i=0; i<SimParams3D::dim;i++)
+            result[i] = data[SimParams3D::velx+i];
+    }
+    return result;
+}
+
+
 double ProxyPoint3D::getValue(size_t valueIdx) const
 {
     if(isReference)
