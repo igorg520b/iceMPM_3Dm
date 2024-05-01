@@ -50,7 +50,7 @@ void SimParams3D::Reset()
     RebalanceThresholdFreeSpaceRemaining = 0.10;
     RebalanceThresholdDisabledPercentage = 0.05;
     PointTransferFrequency = 2;
-    SnapshotPeriod = 10;
+    SnapshotPeriod = 100;
 
     ComputeLame();
     ComputeCamClayParams();
@@ -217,7 +217,6 @@ void SimParams3D::SaveParametersAsAttributes(H5::DataSet &ds)
     att_IceShearStrength.write(H5::PredType::NATIVE_DOUBLE, &IceShearStrength);
     att_DP_tan_phi.write(H5::PredType::NATIVE_DOUBLE, &DP_tan_phi);
     att_GrainVariability.write(H5::PredType::NATIVE_DOUBLE, &GrainVariability);
-
 
     // indenter: location, diameter, and velocity
     H5::Attribute att_indenter_x = ds.createAttribute("indenter_x", H5::PredType::NATIVE_DOUBLE, att_dspace);

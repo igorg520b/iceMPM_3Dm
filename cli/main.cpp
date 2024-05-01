@@ -38,6 +38,7 @@ int main(int argc, char** argv)
         ("s,snapshot", "Only write the starting snapshot", cxxopts::value<bool>()->default_value("false"))
         ("r,resume", "Resume from a full snapshot (.h5) file", cxxopts::value<std::string>())
         ("p,partitions", "Number of partitions (if different from snapshot)", cxxopts::value<int>()->default_value("-1"))
+        ("period", "Snapshot record period (in number of frames)", cxxopts::value<int>())
         ;
     options.parse_positional({"file"});
 
@@ -50,6 +51,7 @@ int main(int argc, char** argv)
         int partitions = option_parse_result["partitions"].as<int>();
         spdlog::info("resuming snapshot {}",snapshot_file);
         snapshot.ReadSnapshot(snapshot_file, partitions);
+        if(option_parse_result.count("period")) model.prms.SnapshotPeriod = option_parse_result["period"].as<int>();
     }
     else if(option_parse_result.count("file"))
     {
@@ -75,9 +77,13 @@ int main(int argc, char** argv)
             spdlog::info("cycle callback {}; ", snapshot_number);
 
             if(model.prms.AnimationFrameNumber() % model.prms.SnapshotPeriod == 0)
-                snapshot.SaveSnapshot(snapshot_directory, false);
+                snapshot.SaveSnapshot(snapshot_directory, true);
 
-            if(model.prms.AnimationFrameNumber() % 100 == 0) snapshot.previous_frame_exists = false;
+            if(model.prms.AnimationFrameNumber() % 100 == 0)
+                {
+                   spdlog::info("frame {}; setting previous_frame_exists = false", model.prms.AnimationFrameNumber());
+                   snapshot.previous_frame_exists = false;
+                }
             snapshot.SaveFrame(animation_frame_directory);
 
             model.UnlockCycleMutex();

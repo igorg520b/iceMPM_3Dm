@@ -34,14 +34,13 @@ public:
     std::vector<VisualPoint> visual_state;
     std::vector<int> last_pos_refresh_frame;
     std::vector<std::pair<int, std::array<float,6>>> update_pos_vel;
-    std::vector<std::pair<int, std::array<float,3>>> update_Jp_p_q;
+    std::vector<std::pair<int, float>> update_Jp;
     std::vector<std::pair<int, uint8_t>> update_status;
 
-    H5::CompType ctUpdPV, ctUpdJpPQ, ctUpdS, ctVisualPoint;
+    H5::CompType ctUpdPV, ctUpdJp, ctUpdS, ctVisualPoint;
 
     constexpr static float threshold_pos = 2e-3;
-    constexpr static float threshold_Jp = 2e-2;
-    constexpr static float threshold_pq = 1e5;
+    constexpr static float threshold_Jp = 1e-2;
 
     void SaveFrame(std::string outputDirectory);
 

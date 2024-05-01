@@ -15,7 +15,7 @@
 SnapshotManager::SnapshotManager()
 {
     ctUpdPV = H5::CompType(sizeof(std::pair<int, std::array<float,6>>));
-    ctUpdJpPQ = H5::CompType(sizeof(std::pair<int, std::array<float,3>>));
+    ctUpdJp = H5::CompType(sizeof(std::pair<int, float>));
     ctUpdS = H5::CompType(sizeof(std::pair<int, uint8_t>));
     ctVisualPoint = H5::CompType(sizeof(VisualPoint));
 
@@ -27,10 +27,8 @@ SnapshotManager::SnapshotManager()
     ctUpdPV.insertMember("vy", sizeof(int)+sizeof(float)*4, H5::PredType::NATIVE_FLOAT);
     ctUpdPV.insertMember("vz", sizeof(int)+sizeof(float)*5, H5::PredType::NATIVE_FLOAT);
 
-    ctUpdJpPQ.insertMember("idx", 0, H5::PredType::NATIVE_INT);
-    ctUpdJpPQ.insertMember("Jp_inv", sizeof(int)+sizeof(float)*0, H5::PredType::NATIVE_FLOAT);
-    ctUpdJpPQ.insertMember("P", sizeof(int)+sizeof(float)*1, H5::PredType::NATIVE_FLOAT);
-    ctUpdJpPQ.insertMember("Q", sizeof(int)+sizeof(float)*2, H5::PredType::NATIVE_FLOAT);
+    ctUpdJp.insertMember("idx", 0, H5::PredType::NATIVE_INT);
+    ctUpdJp.insertMember("Jp_inv", sizeof(int), H5::PredType::NATIVE_FLOAT);
 
     ctUpdS.insertMember("idx", 0, H5::PredType::NATIVE_INT);
     ctUpdS.insertMember("status", sizeof(int), H5::PredType::NATIVE_UINT8);
@@ -125,13 +123,13 @@ void SnapshotManager::SaveFrame(std::string outputDirectory)
         dataset_points.write(visual_state.data(), ctVisualPoint);
 
         previous_frame_exists = true;
-//        spdlog::info("writing full frame; pts {}; previous_frame_exists {}", dims_points, previous_frame_exists);
+        spdlog::info("writing full frame; pts {}; previous_frame_exists {}", dims_points, previous_frame_exists);
     }
     else
     {
         // save partial frame data
         update_pos_vel.clear();
-        update_Jp_p_q.clear();
+        update_Jp.clear();
         update_status.clear();
 
         double &dt = model->prms.InitialTimeStep;
@@ -164,13 +162,10 @@ void SnapshotManager::SaveFrame(std::string outputDirectory)
                 update_pos_vel.push_back({count, arr});
             }
 
-            if(abs(vp.Jp_inv - Jp_inv) > threshold_Jp || abs(vp.p - p) > threshold_pq || abs(vp.q - q) > threshold_pq)
+            if(abs(vp.Jp_inv - Jp_inv) > threshold_Jp)
             {
                 vp.Jp_inv = Jp_inv;
-                vp.p = p;
-                vp.q = q;
-                std::array<float,3> arr = {Jp_inv, p, q};
-                update_Jp_p_q.push_back({count, arr});
+                update_Jp.push_back({count, Jp_inv});
             }
 
             if(vp.status != status)
@@ -182,21 +177,46 @@ void SnapshotManager::SaveFrame(std::string outputDirectory)
         }
 
         // write file
-        hsize_t dims_update_pos_vel = update_pos_vel.size();
-        H5::DataSpace dsp_update_vel(1, &dims_update_pos_vel);
-        H5::DataSet ds_update_vel = file.createDataSet("UpdatePos", ctUpdPV, dsp_update_vel);
-        ds_update_vel.write(update_pos_vel.data(), ctUpdPV);
+        if(update_pos_vel.size() > 0)
+        {
+            H5::DSetCreatPropList proplist3;
+            hsize_t pos_dims = (hsize_t)std::min((size_t)1024*64, update_pos_vel.size());
+            proplist3.setChunk(1, &pos_dims);
+            proplist3.setDeflate(5);
+            hsize_t dims_update_pos_vel = update_pos_vel.size();
+            H5::DataSpace dsp_update_vel(1, &dims_update_pos_vel);
+            H5::DataSet ds_update_vel = file.createDataSet("UpdatePos", ctUpdPV, dsp_update_vel, proplist3);
+            ds_update_vel.write(update_pos_vel.data(), ctUpdPV);
+        }
 
-        hsize_t dims_update_Jp_p_q = update_Jp_p_q.size();
-        H5::DataSpace dsp_update_Jp_p_q(1, &dims_update_Jp_p_q);
-        H5::DataSet ds_update_Jp_p_q = file.createDataSet("UpdateJpPQ", ctUpdJpPQ, dsp_update_Jp_p_q);
-        ds_update_Jp_p_q.write(update_Jp_p_q.data(), ctUpdJpPQ);
 
-        hsize_t dims_update_status = update_status.size();
-        H5::DataSpace dsp_update_status(1, &dims_update_status);
-        H5::DataSet ds_update_status = file.createDataSet("UpdateStatus", ctUpdS, dsp_update_status);
-        ds_update_status.write(update_status.data(), ctUpdS);
-//        spdlog::info("writing iterative frame; pos {}; Jp {}; S {}", dims_update_pos_vel, dims_update_Jp_p_q, dims_update_status);
+        if(update_status.size() > 0)
+        {
+            H5::DSetCreatPropList proplist2;
+            hsize_t status_dims = (hsize_t)std::min((size_t)1024*64, update_status.size());
+            proplist2.setChunk(1, &status_dims);
+            proplist2.setDeflate(5);
+            hsize_t dims_update_status = update_status.size();
+            H5::DataSpace dsp_update_status(1, &dims_update_status);
+            H5::DataSet ds_update_status = file.createDataSet("UpdateStatus", ctUpdS, dsp_update_status, proplist2);
+            ds_update_status.write(update_status.data(), ctUpdS);
+        }
+
+
+        if(update_Jp.size()>0)
+        {
+            // Jp_inv, P, Q
+            H5::DSetCreatPropList proplist4;
+            hsize_t jp_dims = (hsize_t)std::min((size_t)1024*64, update_Jp.size());
+            proplist4.setChunk(1, &jp_dims);
+            proplist4.setDeflate(5);
+            hsize_t dims_update_Jp = update_Jp.size();
+            H5::DataSpace dsp_update_Jp(1, &dims_update_Jp);
+            H5::DataSet ds_update_Jp = file.createDataSet("UpdateJp", ctUpdJp, dsp_update_Jp, proplist4);
+            ds_update_Jp.write(update_Jp.data(), ctUpdJp);
+        }
+
+        spdlog::info("writing iterative frame ");
     }
     file.close();
 }
@@ -216,8 +236,6 @@ void SnapshotManager::SaveSnapshot(std::string outputDirectory, bool compress)
     std::string filePath = outputDirectory + "/" + fileName;
     spdlog::info("saving NC frame {} to file {}", current_frame_number, filePath);
 
-    // always squeeze/sort before saving
-    model->gpu.hssoa.RemoveDisabledAndSort(model->prms.cellsize_inv, model->prms.GridY, model->prms.GridZ);
 
     H5::H5File file(filePath, H5F_ACC_TRUNC);
 
@@ -235,7 +253,7 @@ void SnapshotManager::SaveSnapshot(std::string outputDirectory, bool compress)
     {
         hsize_t chunk_dims = (hsize_t)std::min((unsigned)(1024*1024), (unsigned)model->gpu.hssoa.size);
         proplist.setChunk(1, &chunk_dims);
-        proplist.setDeflate(7);
+        proplist.setDeflate(5);
     }
     H5::DataSet dataset_points = file.createDataSet("Points", H5::PredType::NATIVE_DOUBLE, dataspace_points, proplist);
     dataset_points.write(model->gpu.hssoa.host_buffer, H5::PredType::NATIVE_DOUBLE);
@@ -372,6 +390,9 @@ void SnapshotManager::ReadSnapshot(std::string fileName, int partitions)
     file.close();
 
     // distribute into partitions
+    // always squeeze/sort before saving
+    if(model->prms.SimulationStep != 0)
+        model->gpu.hssoa.RemoveDisabledAndSort(model->prms.cellsize_inv, model->prms.GridY, model->prms.GridZ);
 
     // allocate GPU partitions
     model->gpu.initialize();
