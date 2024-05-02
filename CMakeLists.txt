@@ -10,6 +10,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 option(BUILD_GUI_VERSION "Build the Qt version" OFF)
 option(BUILD_GENERATOR "Build generator" OFF)
 option(BUILD_CLI_VERSION "Build CLI version" ON)
+option(BUILD_CONVERTER "Build the conversion tool for Paraview and Bgeo formats" OFF)
 
 if(BUILD_GUI_VERSION)
     set(CMAKE_AUTOUIC ON)
@@ -58,6 +59,8 @@ add_executable(cm3
     # serializing
     simulation/snapshotmanager.h
     simulation/snapshotmanager.cpp
+    converter/visualpoint.h
+    converter/visualpoint.cpp
 )
 
 
@@ -167,6 +170,8 @@ find_package(VTK 9.1 HINTS "C:\\libraries\\vtk-build\\lib\\cmake\\vtk-9.1" REQUI
         # serializing
         simulation/snapshotmanager.h
         simulation/snapshotmanager.cpp
+        converter/visualpoint.h
+        converter/visualpoint.cpp
     )
 
     set_target_properties(iceMPM_GUIm_3D PROPERTIES CUDA_ARCHITECTURES "80")
@@ -278,5 +283,82 @@ else()
     target_compile_options(gen3d PRIVATE -fopenmp -Wno-stringop-overflow -Wno-invalid-offsetof)
     target_link_libraries(gen3d PRIVATE gomp)
 endif()
+
+endif()
+
+
+
+# converter for Paraview / Bgeo
+
+if(BUILD_CONVERTER)
+    add_executable(conv
+        converter/main.cpp
+        converter/visualpoint.h
+        converter/visualpoint.cpp
+    )
+
+# Eigen
+target_link_libraries(conv PRIVATE Eigen3::Eigen)
+
+# HDF5
+if(WIN32)
+    target_link_directories(conv PRIVATE "C:\\libraries\\hdf5-build\\bin\\Release")
+    target_link_libraries(conv PRIVATE hdf5_cpp hdf5 )
+else()
+    target_link_libraries(conv PRIVATE ${HDF5_LIBRARIES})
+    target_include_directories(conv PRIVATE ${HDF5_INCLUDE_DIRS})
+endif()
+
+# spdlog
+if (WIN32)
+    target_link_libraries(conv PRIVATE spdlog)
+    target_include_directories(conv PRIVATE "C:\\libraries\\spdlog\\include")
+    target_link_directories(conv PRIVATE "C:\\libraries\\spdlog-build\\Release")
+else()
+    target_link_libraries(conv PRIVATE spdlog::spdlog)
+endif()
+
+# OpenMP
+    if(WIN32)
+    target_compile_options(conv PRIVATE /openmp)
+else()
+    target_compile_options(conv PRIVATE -fopenmp -Wno-stringop-overflow -Wno-invalid-offsetof)
+    target_link_libraries(conv PRIVATE gomp)
+endif()
+
+find_package(VTK 9.1 HINTS "C:\\libraries\\vtk-build\\lib\\cmake\\vtk-9.1" REQUIRED COMPONENTS
+  CommonColor
+  CommonCore
+  FiltersCore
+  FiltersSources
+  FiltersGeometry
+  FiltersGeneral
+  FiltersModeling
+  InteractionStyle
+  RenderingContextOpenGL2
+  RenderingCore
+  RenderingFreeType
+  RenderingGL2PSOpenGL2
+  RenderingOpenGL2
+  IOGeometry
+  RenderingAnnotation
+  RenderingLabel
+  IOImage
+  IOXML
+  CommonDataModel
+  CommonTransforms
+)
+
+# partio
+target_link_libraries(conv PRIVATE /usr/local/lib/libpartio.so.1)
+target_include_directories(conv PRIVATE /home/s2/Projects-Libraries/partio/src/lib/)
+
+# VTK
+target_link_libraries(conv PRIVATE ${VTK_LIBRARIES})
+
+vtk_module_autoinit(
+  TARGETS conv
+  MODULES ${VTK_LIBRARIES}
+)
 
 endif()

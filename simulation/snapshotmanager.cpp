@@ -14,35 +14,7 @@
 
 SnapshotManager::SnapshotManager()
 {
-    ctUpdPV = H5::CompType(sizeof(std::pair<int, std::array<float,6>>));
-    ctUpdJp = H5::CompType(sizeof(std::pair<int, float>));
-    ctUpdS = H5::CompType(sizeof(std::pair<int, uint8_t>));
-    ctVisualPoint = H5::CompType(sizeof(VisualPoint));
-
-    ctUpdPV.insertMember("idx", 0, H5::PredType::NATIVE_INT);
-    ctUpdPV.insertMember("px", sizeof(int)+sizeof(float)*0, H5::PredType::NATIVE_FLOAT);
-    ctUpdPV.insertMember("py", sizeof(int)+sizeof(float)*1, H5::PredType::NATIVE_FLOAT);
-    ctUpdPV.insertMember("pz", sizeof(int)+sizeof(float)*2, H5::PredType::NATIVE_FLOAT);
-    ctUpdPV.insertMember("vx", sizeof(int)+sizeof(float)*3, H5::PredType::NATIVE_FLOAT);
-    ctUpdPV.insertMember("vy", sizeof(int)+sizeof(float)*4, H5::PredType::NATIVE_FLOAT);
-    ctUpdPV.insertMember("vz", sizeof(int)+sizeof(float)*5, H5::PredType::NATIVE_FLOAT);
-
-    ctUpdJp.insertMember("idx", 0, H5::PredType::NATIVE_INT);
-    ctUpdJp.insertMember("Jp_inv", sizeof(int), H5::PredType::NATIVE_FLOAT);
-
-    ctUpdS.insertMember("idx", 0, H5::PredType::NATIVE_INT);
-    ctUpdS.insertMember("status", sizeof(int), H5::PredType::NATIVE_UINT8);
-
-    ctVisualPoint.insertMember("px", 0, H5::PredType::NATIVE_FLOAT);
-    ctVisualPoint.insertMember("py", sizeof(float), H5::PredType::NATIVE_FLOAT);
-    ctVisualPoint.insertMember("pz", sizeof(float)*2, H5::PredType::NATIVE_FLOAT);
-    ctVisualPoint.insertMember("vx", sizeof(float)*3, H5::PredType::NATIVE_FLOAT);
-    ctVisualPoint.insertMember("vy", sizeof(float)*4, H5::PredType::NATIVE_FLOAT);
-    ctVisualPoint.insertMember("vz", sizeof(float)*5, H5::PredType::NATIVE_FLOAT);
-    ctVisualPoint.insertMember("Jp_inv", HOFFSET(VisualPoint, Jp_inv), H5::PredType::NATIVE_FLOAT);
-    ctVisualPoint.insertMember("P", HOFFSET(VisualPoint, p), H5::PredType::NATIVE_FLOAT);
-    ctVisualPoint.insertMember("Q", HOFFSET(VisualPoint, q), H5::PredType::NATIVE_FLOAT);
-    ctVisualPoint.insertMember("status", HOFFSET(VisualPoint, status), H5::PredType::NATIVE_UINT8);
+    VisualPoint::InitializeStatic();
 }
 
 void SnapshotManager::SaveFrame(std::string outputDirectory)
@@ -79,6 +51,8 @@ void SnapshotManager::SaveFrame(std::string outputDirectory)
     H5::Attribute att = dataset_indenter.createAttribute("partial_frame", H5::PredType::NATIVE_UINT8, att_dspace);
     att.write(H5::PredType::NATIVE_UINT8, &prev_frame);
 
+    model->prms.SaveParametersAsAttributes(dataset_indenter);
+
     // time stamp
     auto now = std::chrono::system_clock::now();
     uint64_t seconds = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
@@ -103,8 +77,6 @@ void SnapshotManager::SaveFrame(std::string outputDirectory)
             Eigen::Vector3d vel = s->getVelocity();
             vp.vel[0] = vel[0]; vp.vel[1] = vel[1]; vp.vel[2] = vel[2];
             vp.Jp_inv = s->getValue(SimParams3D::idx_Jp_inv);
-            vp.p = s->getValue(SimParams3D::idx_P);
-            vp.q = s->getValue(SimParams3D::idx_Q);
             vp.status = s->getPartition();
             if(s->getCrushedStatus()) vp.status |= 0b10000000;
             count++;
@@ -119,8 +91,8 @@ void SnapshotManager::SaveFrame(std::string outputDirectory)
         hsize_t chunk_dims = (hsize_t)std::min((unsigned)(1024*1024), (unsigned)count);
         proplist.setChunk(1, &chunk_dims);
         proplist.setDeflate(5);
-        H5::DataSet dataset_points = file.createDataSet("VisualPoints", ctVisualPoint, dataspace_points, proplist);
-        dataset_points.write(visual_state.data(), ctVisualPoint);
+        H5::DataSet dataset_points = file.createDataSet("VisualPoints", VisualPoint::ctVisualPoint, dataspace_points, proplist);
+        dataset_points.write(visual_state.data(), VisualPoint::ctVisualPoint);
 
         previous_frame_exists = true;
         spdlog::info("writing full frame; pts {}; previous_frame_exists {}", dims_points, previous_frame_exists);
@@ -145,8 +117,6 @@ void SnapshotManager::SaveFrame(std::string outputDirectory)
             Eigen::Vector3d pos = s->getPos();
             Eigen::Vector3d vel = s->getVelocity();
             float Jp_inv = s->getValue(SimParams3D::idx_Jp_inv);
-            float p = s->getValue(SimParams3D::idx_P);
-            float q = s->getValue(SimParams3D::idx_Q);
             uint8_t status = s->getPartition();
             if(s->getCrushedStatus()) status |= 0b10000000;
 
@@ -185,10 +155,9 @@ void SnapshotManager::SaveFrame(std::string outputDirectory)
             proplist3.setDeflate(5);
             hsize_t dims_update_pos_vel = update_pos_vel.size();
             H5::DataSpace dsp_update_vel(1, &dims_update_pos_vel);
-            H5::DataSet ds_update_vel = file.createDataSet("UpdatePos", ctUpdPV, dsp_update_vel, proplist3);
-            ds_update_vel.write(update_pos_vel.data(), ctUpdPV);
+            H5::DataSet ds_update_vel = file.createDataSet("UpdatePos", VisualPoint::ctUpdPV, dsp_update_vel, proplist3);
+            ds_update_vel.write(update_pos_vel.data(), VisualPoint::ctUpdPV);
         }
-
 
         if(update_status.size() > 0)
         {
@@ -198,12 +167,11 @@ void SnapshotManager::SaveFrame(std::string outputDirectory)
             proplist2.setDeflate(5);
             hsize_t dims_update_status = update_status.size();
             H5::DataSpace dsp_update_status(1, &dims_update_status);
-            H5::DataSet ds_update_status = file.createDataSet("UpdateStatus", ctUpdS, dsp_update_status, proplist2);
-            ds_update_status.write(update_status.data(), ctUpdS);
+            H5::DataSet ds_update_status = file.createDataSet("UpdateStatus", VisualPoint::ctUpdS, dsp_update_status, proplist2);
+            ds_update_status.write(update_status.data(), VisualPoint::ctUpdS);
         }
 
-
-        if(update_Jp.size()>0)
+        if(update_Jp.size() > 0)
         {
             // Jp_inv, P, Q
             H5::DSetCreatPropList proplist4;
@@ -212,8 +180,8 @@ void SnapshotManager::SaveFrame(std::string outputDirectory)
             proplist4.setDeflate(5);
             hsize_t dims_update_Jp = update_Jp.size();
             H5::DataSpace dsp_update_Jp(1, &dims_update_Jp);
-            H5::DataSet ds_update_Jp = file.createDataSet("UpdateJp", ctUpdJp, dsp_update_Jp, proplist4);
-            ds_update_Jp.write(update_Jp.data(), ctUpdJp);
+            H5::DataSet ds_update_Jp = file.createDataSet("UpdateJp", VisualPoint::ctUpdJp, dsp_update_Jp, proplist4);
+            ds_update_Jp.write(update_Jp.data(), VisualPoint::ctUpdJp);
         }
 
         spdlog::info("writing iterative frame ");

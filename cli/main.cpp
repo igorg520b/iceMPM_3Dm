@@ -60,13 +60,16 @@ int main(int argc, char** argv)
         snapshot.LoadRawPoints(pointCloudFile);
     }
 
-
     if(option_parse_result.count("snapshot"))
     {
         // only generate the starting snapshot
         // write a snapshot and return
         snapshot.SaveSnapshot(snapshot_directory, true);
         return 0;
+    }
+    else
+    {
+        snapshot.SaveFrame(animation_frame_directory);
     }
 
     model.gpu.transfer_completion_callback = [&](){
