@@ -30,8 +30,6 @@ public:
     Eigen::Vector3d indenter_force;
     std::vector<double> indenter_sensor_total;
 
-    std::function<void()> transfer_completion_callback;
-
     void allocate_arrays();
     void split_hssoa_into_partitions();     // perform grid and point partitioning
     void transfer_ponts_to_device();

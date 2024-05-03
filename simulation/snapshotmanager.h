@@ -21,7 +21,7 @@ public:
     Model3D *model;
 
     void LoadRawPoints(std::string fileName);
-    void SaveSnapshot(std::string outputDirectory, bool compress = false);
+    void SaveSnapshot(std::string outputDirectory, const int frame, bool compress = false);
     void ReadSnapshot(std::string fileName, int partitions);
 
     // saving animation frames
@@ -36,7 +36,7 @@ public:
     constexpr static float threshold_pos = 2e-3;
     constexpr static float threshold_Jp = 1e-2;
 
-    void SaveFrame(std::string outputDirectory);
+    void SaveFrame(std::string outputDirectory, const int frame);
 
 };
 

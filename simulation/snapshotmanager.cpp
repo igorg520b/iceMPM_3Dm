@@ -17,10 +17,9 @@ SnapshotManager::SnapshotManager()
     VisualPoint::InitializeStatic();
 }
 
-void SnapshotManager::SaveFrame(std::string outputDirectory)
+void SnapshotManager::SaveFrame(std::string outputDirectory, const int frame)
 {
     // populate saved_frame
-    const int frame = model->prms.AnimationFrameNumber();
     char fileName[20];
     snprintf(fileName, sizeof(fileName), "v%05d.h5", frame);
     std::string fullFilePath = outputDirectory + "/" + fileName;
@@ -193,17 +192,15 @@ void SnapshotManager::SaveFrame(std::string outputDirectory)
 
 
 
-void SnapshotManager::SaveSnapshot(std::string outputDirectory, bool compress)
+void SnapshotManager::SaveSnapshot(std::string outputDirectory, const int frame, bool compress)
 {
     std::filesystem::path odp(outputDirectory);
     if(!std::filesystem::is_directory(odp) || !std::filesystem::exists(odp)) std::filesystem::create_directory(odp);
 
-    const int current_frame_number = model->prms.AnimationFrameNumber();
     char fileName[20];
-    snprintf(fileName, sizeof(fileName), "d%05d.h5", current_frame_number);
+    snprintf(fileName, sizeof(fileName), "d%05d.h5", frame);
     std::string filePath = outputDirectory + "/" + fileName;
-    spdlog::info("saving NC frame {} to file {}", current_frame_number, filePath);
-
+    spdlog::info("saving NC frame {} to file {}", frame, filePath);
 
     H5::H5File file(filePath, H5F_ACC_TRUNC);
 

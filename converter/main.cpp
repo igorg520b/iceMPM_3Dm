@@ -3,6 +3,7 @@
 #include <string>
 #include <filesystem>
 #include <chrono>
+#include <mutex>
 
 #include <cxxopts.hpp>
 #include <spdlog/spdlog.h>
@@ -46,7 +47,7 @@ int main(int argc, char** argv)
     bool export_paraview = option_parse_result.count("paraview");
     int frames = option_parse_result["frames"].as<int>();
     int count_threads = option_parse_result["threads"].as<int>();
-    spdlog::info("frames {}; threads {}", frames, count_threads);
+    spdlog::info("frames {}; threads {}; paraview {}; bgeo {}", frames, count_threads, export_paraview, export_bgeo);
 
     std::filesystem::path od(Converter::directory_output);
     std::filesystem::path od1(std::string(Converter::directory_output) + "/" + std::string(Converter::directory_bgeo));
@@ -60,6 +61,15 @@ int main(int argc, char** argv)
     if(!std::filesystem::is_directory(od4) || !std::filesystem::exists(od4)) std::filesystem::create_directory(od4);
 
     VisualPoint::InitializeStatic();
+    std::mutex accessing_indenter_force_file;
+    Converter::accessing_indenter_force_file = &accessing_indenter_force_file;
+
+    H5::H5File file(std::string(Converter::directory_output) + "/indenter.h5", H5F_ACC_TRUNC);
+    hsize_t dims_indenter[2] = {(hsize_t)frames,3};
+    H5::DataSpace dataspace_indenter(2, dims_indenter);
+    H5::DataSet dataset_indenter = file.createDataSet("IndenterTotals", H5::PredType::NATIVE_DOUBLE, dataspace_indenter);
+    Converter::dataset_indenter_totals = &dataset_indenter;
+    Converter::frames_total = frames;
 
     omp_set_num_threads(count_threads);
 
@@ -72,6 +82,7 @@ int main(int argc, char** argv)
         c.process_subset(i, remaining, frames_directory, export_bgeo, export_paraview);
     }
 
+    file.close();
     spdlog::info("done");
 
     return 0;

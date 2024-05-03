@@ -447,7 +447,7 @@ void GPU_Implementation6::transfer_from_device()
             throw std::runtime_error("error code");
         }
 
-        for(int j=0; j<model->prms.IndenterSubdivisions; j++)
+        for(int j=0; j<model->prms.IndenterSubdivisions*model->prms.GridZ; j++)
             for(int k=0;k<3;k++)
             {
                 int idx = j*SimParams3D::dim+k;
@@ -457,7 +457,7 @@ void GPU_Implementation6::transfer_from_device()
     }
 
     indenter_force /= (double)model->prms.UpdateEveryNthStep;
-    for(double &val : indenter_sensor_total) val /= (double)model->prms.UpdateEveryNthStep;
+    for(double &val : indenter_sensor_total) val /= (double)(model->prms.UpdateEveryNthStep*model->prms.cellsize*model->prms.cellsize);
 
     int count = 0;
     for(int i=0;i<hssoa.size;i++)
@@ -493,7 +493,7 @@ void GPU_Implementation6::transfer_from_device()
         throw std::runtime_error("transfer_from_device(): active point count mismatch");
     }
 
-    if(transfer_completion_callback) transfer_completion_callback();
+
 }
 
 

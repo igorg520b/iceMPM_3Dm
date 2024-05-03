@@ -53,6 +53,9 @@ bool Model3D::Step()
     processing_current_cycle_data.lock();   // if locked, previous results are not yet processed by the host
     accessing_point_data.lock();
 
+    prms.SimulationTime = simulation_time;
+    prms.SimulationStep += count_unupdated_steps;
+
     gpu.transfer_from_device();
     max_pt_deviation = 0;
     for(GPU_Partition_3D &p : gpu.partitions)
@@ -63,8 +66,7 @@ bool Model3D::Step()
     spdlog::info("finished {} ({}); host pts {}; cap {}; max_tr {}; max_dev {}; ptf {}", prms.SimulationStep,
                  prms.AnimationFrameNumber(), gpu.hssoa.size, gpu.hssoa.capacity, max_points_transferred,
                     max_pt_deviation, prms.PointTransferFrequency);
-    prms.SimulationTime = simulation_time;
-    prms.SimulationStep += count_unupdated_steps;
+
     spdlog::get("indenter_force")->info("{},{},{},{}",prms.SimulationTime,gpu.indenter_force.x(), gpu.indenter_force.y(), gpu.indenter_force.norm());
 
     if(max_pt_deviation > prms.GridHaloSize/2) prms.PointTransferFrequency++; // transfer points more often if any risk

@@ -4,9 +4,6 @@
 BackgroundWorker::BackgroundWorker(Model3D *controller_) : controller(controller_)
 {
     this->start();
-    controller->gpu.transfer_completion_callback = [&]() {
-        Q_EMIT stepCompleted();
-    };
 }
 
 // resume the worker thread
@@ -54,11 +51,7 @@ void BackgroundWorker::run()
 
         bool result = controller->Step();
         if(!result) timeToPause = true;
-        if(!visual_update_requested)
-        {
-            visual_update_requested = true;
-            //Q_EMIT stepCompleted();
-        }
+        Q_EMIT stepCompleted();
     }
     qDebug() << "BackgroundWorker::run() terminated";
 }

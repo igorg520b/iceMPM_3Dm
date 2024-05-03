@@ -1,5 +1,11 @@
 #include "converter.h"
 
+std::mutex *Converter::accessing_indenter_force_file;
+H5::DataSet *Converter::dataset_indenter_totals;
+//H5::DataSpace *Converter::dataspace;
+int Converter::frames_total;
+
+
 Converter::Converter()
 {
 //    writer3->SetDataModeToAscii();
@@ -197,7 +203,7 @@ void Converter::save_indenter()
 void Converter::save_tekscan()
 {
     double h = cellsize;
-    double hsq = h*h;
+//    double hsq = h*h;
 
     int nx = GridZ+1;
     int ny = IndenterSubdivisions*0.3+1;
@@ -217,7 +223,7 @@ void Converter::save_tekscan()
         {
             int idx = idx_x + GridZ*(IndenterSubdivisions-idx_y-1);
             Eigen::Map<Eigen::Vector3d> f(&indenter_data[3*idx]);
-            float val = f.norm()/hsq;
+            float val = f.norm();
             values->SetValue((idx_x+idx_y*(nx-1)), val);
         }
     values->Modified();
@@ -254,9 +260,6 @@ void Converter::read_file(std::string fullFilePath)
     att_indy.read(H5::PredType::NATIVE_DOUBLE, &indenter_y);
 
 
-
-
-
     if(!prev_frame)
         read_full_frame(file, dataset_indenter);
     else
@@ -264,6 +267,40 @@ void Converter::read_file(std::string fullFilePath)
 
     dataset_indenter.read(indenter_data.data(), H5::PredType::NATIVE_DOUBLE);
     file.close();
+}
+
+
+void Converter::save_indenter_total()
+{
+    double force[3] {};
+    for(int j=0; j<IndenterSubdivisions*GridZ; j++)
+        for(int k=0;k<3;k++)
+        {
+            int idx = j*3+k;
+            force[k] += indenter_data[idx];
+        }
+
+    double hsq = cellsize*cellsize;
+    for(double &val : force) val *= hsq;
+
+    // write
+    accessing_indenter_force_file->lock();
+    hsize_t dims[2] = {(hsize_t)frames_total, 3};
+    H5::DataSpace dataspace(2, dims);
+
+    hsize_t count[2] = {1, 3};  // Dimensions of the hyperslab
+    hsize_t offset[2] = {(hsize_t)frame, 0};
+
+    // Select a hyperslab in the dataset
+
+    dataspace.selectHyperslab(H5S_SELECT_SET, count, offset);
+
+    hsize_t dims_mem[2] = {1,3};
+    H5::DataSpace dataspace_mem(2, dims_mem);
+
+    dataset_indenter_totals->write(force, H5::PredType::NATIVE_DOUBLE, dataspace_mem, dataspace);
+
+    accessing_indenter_force_file->unlock();
 }
 
 
@@ -288,6 +325,7 @@ void Converter::process_subset(const int _frame_start, int count, std::string di
         }
 
         if(bgeo) save_bgeo();
+        save_indenter_total();
     }
 }
 

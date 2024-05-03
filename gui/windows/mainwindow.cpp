@@ -277,8 +277,6 @@ void MainWindow::LoadParameterFile(QString qFileName)
 void MainWindow::simulation_data_ready()
 {
     updateGUI();
-//    snapshot.SaveSnapshot(outputDirectory);
-//    snapshot.SavePQ(outputDirectory);
     if(ui->actionTake_Screenshots->isChecked())
         screenshot();
     model.UnlockCycleMutex();
@@ -301,8 +299,6 @@ void MainWindow::updateGUI()
         representation.SynchronizeValues();
     }
     renderWindow->Render();
-
-    worker->visual_update_requested = false;
 }
 
 void MainWindow::simulation_start_pause(bool checked)

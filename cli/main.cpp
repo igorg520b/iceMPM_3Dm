@@ -5,6 +5,7 @@
 #include <atomic>
 #include <thread>
 #include <chrono>
+#include <mutex>
 
 #include <cxxopts.hpp>
 #include <spdlog/spdlog.h>
@@ -22,8 +23,7 @@ int main(int argc, char** argv)
     std::string snapshot_directory = "_snapshots";
     std::string animation_frame_directory = "_snapshots_animation";
     std::thread snapshot_thread;
-    std::atomic<bool> request_terminate = false;
-    std::atomic<bool> request_full_snapshot = false;
+
 
     // initialize the model
 
@@ -64,67 +64,41 @@ int main(int argc, char** argv)
     {
         // only generate the starting snapshot
         // write a snapshot and return
-        snapshot.SaveSnapshot(snapshot_directory, true);
+        snapshot.SaveSnapshot(snapshot_directory, model.prms.AnimationFrameNumber(), true);
         return 0;
     }
     else
     {
-        snapshot.SaveFrame(animation_frame_directory);
+        // save frame zero
+        snapshot.SaveFrame(animation_frame_directory, model.prms.AnimationFrameNumber());
     }
 
-    model.gpu.transfer_completion_callback = [&](){
-        if(snapshot_thread.joinable()) snapshot_thread.join();
-        snapshot_thread = std::thread([&](){
-            int snapshot_number = model.prms.AnimationFrameNumber();
-            if(request_terminate) { model.UnlockCycleMutex(); std::cout << "snapshot aborted\n"; return; }
-            spdlog::info("cycle callback {}; ", snapshot_number);
-
-            if(model.prms.AnimationFrameNumber() % model.prms.SnapshotPeriod == 0)
-                snapshot.SaveSnapshot(snapshot_directory, true);
-
-            if(model.prms.AnimationFrameNumber() % 100 == 0)
-                {
-                   spdlog::info("frame {}; setting previous_frame_exists = false", model.prms.AnimationFrameNumber());
-                   snapshot.previous_frame_exists = false;
-                }
-            snapshot.SaveFrame(animation_frame_directory);
-
-            model.UnlockCycleMutex();
-            spdlog::info("callback {} done", snapshot_number);
-        });
-    };
     // ensure that the folder exists
     std::filesystem::path outputFolder(snapshot_directory);
     std::filesystem::create_directory(outputFolder);
 
     // start the simulation thread
-    std::thread simulation_thread([&](){
-        bool result;
-        do
-        {
-            result = model.Step();
-        } while(!request_terminate && result);
-    });
-
-    // accept console input
+    bool result;
     do
     {
-        std::string user_input;
-        std::cin >> user_input;
+        result = model.Step();
 
-        if(user_input[0]=='s')
-        {
-            request_full_snapshot = true;
-            spdlog::critical("requested to save a full snapshot");
-        }
-        else if(user_input[0]=='q'){
-            request_terminate = true;
-            request_full_snapshot = true;
-            spdlog::critical("requested to save the snapshot and terminate");
-        }
-    } while(!request_terminate);
+        if(snapshot_thread.joinable()) snapshot_thread.join(); // this should not happen
+        snapshot_thread = std::thread([&](){
+            int snapshot_number = model.prms.AnimationFrameNumber();
+            spdlog::info("step {} finished; saving data", snapshot_number);
 
-    simulation_thread.join();
+            if(snapshot_number % model.prms.SnapshotPeriod == 0)
+                snapshot.SaveSnapshot(snapshot_directory, snapshot_number, true);
+
+            if(snapshot_number % 100 == 0) snapshot.previous_frame_exists = false;
+            snapshot.SaveFrame(animation_frame_directory, snapshot_number);
+
+            model.UnlockCycleMutex();
+            spdlog::info("done saving frame {}", snapshot_number);
+        });
+    } while(result);
+
     model.gpu.synchronize();
     snapshot_thread.join();
 
