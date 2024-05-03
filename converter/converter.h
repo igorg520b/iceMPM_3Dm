@@ -63,6 +63,7 @@ private:
     char fileName[20];
     double dt, IndDiameter, cellsize;
     double indenter_x, indenter_y;
+    double SimulationTime;
 
     void read_full_frame(H5::H5File &file, H5::DataSet &dataset_indenter);
     void read_partial_frame(H5::H5File &file);

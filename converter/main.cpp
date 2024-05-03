@@ -65,7 +65,7 @@ int main(int argc, char** argv)
     Converter::accessing_indenter_force_file = &accessing_indenter_force_file;
 
     H5::H5File file(std::string(Converter::directory_output) + "/indenter.h5", H5F_ACC_TRUNC);
-    hsize_t dims_indenter[2] = {(hsize_t)frames,3};
+    hsize_t dims_indenter[2] = {(hsize_t)frames,5};
     H5::DataSpace dataspace_indenter(2, dims_indenter);
     H5::DataSet dataset_indenter = file.createDataSet("IndenterTotals", H5::PredType::NATIVE_DOUBLE, dataspace_indenter);
     Converter::dataset_indenter_totals = &dataset_indenter;

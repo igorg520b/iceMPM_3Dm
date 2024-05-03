@@ -241,7 +241,31 @@ void Converter::save_tekscan()
 }
 
 void Converter::save_bgeo()
-{}
+{
+    spdlog::info("export_bgeo frame {}", frame);
+
+    Partio::ParticlesDataMutable* parts = Partio::create();
+    Partio::ParticleAttribute attr_Jp = parts->addAttribute("Jp_inv", Partio::FLOAT, 1);
+    Partio::ParticleAttribute attr_pos = parts->addAttribute("position", Partio::VECTOR, 3);
+
+    parts->addParticles(v.size());
+    for(int i=0;i<v.size();i++)
+    {
+        VisualPoint &vp = v[i];
+        float* val = parts->dataWrite<float>(attr_pos, i);
+        for(int j=0;j<3;j++) val[j] = vp.pos[j];
+        float *val_Jp = parts->dataWrite<float>(attr_Jp, i);
+        val_Jp[0] = vp.Jp_inv;
+    }
+
+    char fileName[20];
+    snprintf(fileName, sizeof(fileName), "%05d.bgeo", frame);
+    std::string savePath = std::string(directory_output) + "/" + std::string(directory_bgeo) + "/" + fileName;
+    spdlog::info("writing bgeo file {}", savePath);
+    Partio::write(savePath.c_str(), *parts);
+    parts->release();
+    spdlog::info("export_bgeo frame done {}", frame);
+}
 
 
 
@@ -258,6 +282,8 @@ void Converter::read_file(std::string fullFilePath)
     att_indx.read(H5::PredType::NATIVE_DOUBLE, &indenter_x);
     H5::Attribute att_indy = dataset_indenter.openAttribute("indenter_y");
     att_indy.read(H5::PredType::NATIVE_DOUBLE, &indenter_y);
+    H5::Attribute att_time = dataset_indenter.openAttribute("SimulationTime");
+    att_time.read(H5::PredType::NATIVE_DOUBLE, &SimulationTime);
 
 
     if(!prev_frame)
@@ -272,34 +298,33 @@ void Converter::read_file(std::string fullFilePath)
 
 void Converter::save_indenter_total()
 {
-    double force[3] {};
+    double force[5] {};
     for(int j=0; j<IndenterSubdivisions*GridZ; j++)
         for(int k=0;k<3;k++)
         {
             int idx = j*3+k;
-            force[k] += indenter_data[idx];
+            force[k+1] += indenter_data[idx];
         }
-
     double hsq = cellsize*cellsize;
-    for(double &val : force) val *= hsq;
+    force[0] = SimulationTime;
+    force[1] *= hsq;
+    force[2] *= hsq;
+    force[3] *= hsq;
+    force[4] = sqrt(force[1]*force[1]+force[2]*force[2]+force[3]*force[3]);
 
     // write
     accessing_indenter_force_file->lock();
-    hsize_t dims[2] = {(hsize_t)frames_total, 3};
+    hsize_t dims[2] = {(hsize_t)frames_total, 5};
     H5::DataSpace dataspace(2, dims);
 
-    hsize_t count[2] = {1, 3};  // Dimensions of the hyperslab
+    hsize_t count[2] = {1, 5};  // Dimensions of the hyperslab
     hsize_t offset[2] = {(hsize_t)frame, 0};
-
-    // Select a hyperslab in the dataset
-
     dataspace.selectHyperslab(H5S_SELECT_SET, count, offset);
 
-    hsize_t dims_mem[2] = {1,3};
+    hsize_t dims_mem[2] = {1,5};
     H5::DataSpace dataspace_mem(2, dims_mem);
 
     dataset_indenter_totals->write(force, H5::PredType::NATIVE_DOUBLE, dataspace_mem, dataspace);
-
     accessing_indenter_force_file->unlock();
 }
 
