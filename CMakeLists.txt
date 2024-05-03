@@ -295,6 +295,8 @@ if(BUILD_CONVERTER)
         converter/main.cpp
         converter/visualpoint.h
         converter/visualpoint.cpp
+        converter/converter.h
+        converter/converter.cpp
     )
 
 # Eigen

@@ -65,7 +65,6 @@ bool Model3D::Step()
                     max_pt_deviation, prms.PointTransferFrequency);
     prms.SimulationTime = simulation_time;
     prms.SimulationStep += count_unupdated_steps;
-    gpu.indenter_force /= (double)count_unupdated_steps;
     spdlog::get("indenter_force")->info("{},{},{},{}",prms.SimulationTime,gpu.indenter_force.x(), gpu.indenter_force.y(), gpu.indenter_force.norm());
 
     if(max_pt_deviation > prms.GridHaloSize/2) prms.PointTransferFrequency++; // transfer points more often if any risk

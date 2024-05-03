@@ -185,7 +185,10 @@ __global__ void partition_kernel_update_nodes(const Eigen::Vector2d indCenter,
             float angle = atan2f((float)n[0],(float)n[1]);
             angle += SimParams3D::pi;
             angle *= gprms.IndenterSubdivisions/(2*SimParams3D::pi);
-            int index = min(max((int)angle, 0), gprms.IndenterSubdivisions-1);
+
+            int index_angle = min(max((int)angle, 0), gprms.IndenterSubdivisions-1);
+            int index_z = min(max(idx_z,0),gridZ-1);
+            int index = index_z + index_angle*gridZ;
 
             for(int i=0;i<SimParams3D::dim;i++) atomicAdd(&indenter_force_accumulator[i+SimParams3D::dim*index], force[i]);
         }

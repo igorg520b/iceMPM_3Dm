@@ -456,6 +456,9 @@ void GPU_Implementation6::transfer_from_device()
             }
     }
 
+    indenter_force /= (double)model->prms.UpdateEveryNthStep;
+    for(double &val : indenter_sensor_total) val /= (double)model->prms.UpdateEveryNthStep;
+
     int count = 0;
     for(int i=0;i<hssoa.size;i++)
     {
