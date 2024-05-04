@@ -31,3 +31,11 @@ A simulation can be "resumed" from a full snapshot via:
 To create an initial snapshot (.h5) from a JSON file:
 
 > cm3 startfile.json --snapshot
+
+Converting the resulting HDF5 data into Paraview and/or BGEO formats:
+
+> -d _snapshots_animation -t 12 -f 2400 -p -b -i
+
+Converting screenshots into video with ffmpeg:
+
+> ffmpeg -y -r 60 -f image2 -start_number 1 -i "a_%04d.png" -vframes 2399 -vcodec libx264 -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" -crf 15 -pix_fmt yuv420p "result.mp4"

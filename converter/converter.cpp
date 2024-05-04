@@ -330,7 +330,8 @@ void Converter::save_indenter_total()
 
 
 
-void Converter::process_subset(const int _frame_start, int count, std::string directory, bool bgeo, bool paraview)
+void Converter::process_subset(const int _frame_start, int count, std::string directory,
+                               bool bgeo, bool paraview, bool paraview_intact)
 {
     this->frame_start = _frame_start;
     spdlog::info("process_subset; frame_start {}; count {}", frame_start, count);
@@ -349,10 +350,48 @@ void Converter::process_subset(const int _frame_start, int count, std::string di
             save_tekscan();
         }
 
+        if(paraview_intact) save_points_intact();
+
         if(bgeo) save_bgeo();
         save_indenter_total();
     }
 }
 
+void Converter::save_points_intact()
+{
+    spdlog::info("save_points {}; n= {}", frame, v.size());
+    int n = v.size();
 
+    points->SetNumberOfPoints(0);
+    values_Jp->SetNumberOfValues(0);
+    values_status->SetNumberOfValues(0);
+    values_partitions->SetNumberOfValues(0);
+
+    for(int i=0;i<n;i++)
+    {
+        VisualPoint &vp = v[i];
+        int frame_difference = frame - last_pos_refresh_frame[i];
+        Eigen::Vector3f pos = vp.getPos() + vp.getVel()*(dt*frame_difference*UpdateEveryNthStep);
+
+        if(vp.getCrushedStatus()) continue;
+        points->InsertNextPoint(pos[0], pos[1], pos[2]);
+        values_Jp->InsertNextValue(vp.Jp_inv);
+        values_status->InsertNextValue(vp.getCrushedStatus());
+        values_partitions->InsertNextValue(vp.getPartition());
+    }
+    points->Modified();
+    values_Jp->Modified();
+    values_status->Modified();
+    values_partitions->Modified();
+
+    char pointsFileName[20];
+
+    // INDENTER / cylinder shape
+    snprintf(pointsFileName, sizeof(pointsFileName), "ip_%05d.vtp", frame);
+    std::string savePath = std::string(directory_output) + "/" + std::string(directory_points_intact) + "/"+ pointsFileName;
+    spdlog::info("writing points {}", savePath);
+
+    writer1->SetFileName(savePath.c_str());
+    writer1->Write();
+}
 

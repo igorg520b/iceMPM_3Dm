@@ -41,15 +41,15 @@ public:
     constexpr static std::string_view directory_output = "_output";
     constexpr static std::string_view directory_bgeo = "output_bgeo";
     constexpr static std::string_view directory_points = "points";
+    constexpr static std::string_view directory_points_intact = "points_intact";
     constexpr static std::string_view directory_indenter = "indenter";
     constexpr static std::string_view directory_sensor = "sensor";
 
     static std::mutex *accessing_indenter_force_file;
     static H5::DataSet *dataset_indenter_totals;
-//    static H5::DataSpace *dataspace;
     static int frames_total;
 
-    void process_subset(const int frame_start, int count, std::string directory, bool bgeo, bool paraview);
+    void process_subset(const int frame_start, int count, std::string directory, bool bgeo, bool paraview, bool paraview_intact);
 
 private:
     std::vector<VisualPoint> v;
@@ -70,6 +70,7 @@ private:
     void read_file(std::string fileName);
 
     void save_points();
+    void save_points_intact();
     void save_indenter();
     void save_tekscan();
     void save_bgeo();
