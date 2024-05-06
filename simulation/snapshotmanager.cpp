@@ -325,7 +325,7 @@ void SnapshotManager::LoadRawPoints(std::string fileName)
 
 void SnapshotManager::ReadSnapshot(std::string fileName, int partitions)
 {
-    if(!std::filesystem::exists(fileName)) return;
+    if(!std::filesystem::exists(fileName)) throw std::runtime_error("snapshot file does not exist");
     spdlog::info("reading snapshot {}", fileName);
 
     H5::H5File file(fileName, H5F_ACC_RDONLY);

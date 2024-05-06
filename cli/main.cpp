@@ -19,16 +19,11 @@ int main(int argc, char** argv)
 {
     Model3D model;
     SnapshotManager snapshot;
+    snapshot.model = &model;
 
     std::string snapshot_directory = "_snapshots";
     std::string animation_frame_directory = "_snapshots_animation";
     std::thread snapshot_thread;
-
-
-    // initialize the model
-
-    //model.Reset();
-    snapshot.model = &model;
 
     // parse options
     cxxopts::Options options("Ice MPM", "CLI version of MPM simulation");
