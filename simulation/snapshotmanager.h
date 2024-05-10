@@ -33,7 +33,6 @@ public:
     std::vector<std::pair<int, float>> update_Jp;
     std::vector<std::pair<int, uint8_t>> update_status;
 
-    constexpr static float threshold_pos = 2e-3;
     constexpr static float threshold_Jp = 1e-2;
 
     void SaveFrame(std::string outputDirectory, const int frame);

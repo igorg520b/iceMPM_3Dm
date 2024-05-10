@@ -122,7 +122,7 @@ void SnapshotManager::SaveFrame(std::string outputDirectory, const int frame)
             int elapsed_frames = frame - last_pos_refresh_frame[count];
             Eigen::Vector3f predicted_position = Eigen::Map<Eigen::Vector3f>(vp.pos) + Eigen::Map<Eigen::Vector3f>(vp.vel)*(dt*elapsed_frames*coeff);
             Eigen::Vector3f prediction_error = pos.cast<float>() - predicted_position;
-            if(prediction_error.norm() > threshold_pos)
+            if(prediction_error.norm() > model->prms.animation_threshold_pos)
             {
                 last_pos_refresh_frame[count] = frame;
                 Eigen::Map<Eigen::Vector3f>(vp.pos) = pos.cast<float>();
@@ -351,6 +351,10 @@ void SnapshotManager::ReadSnapshot(std::string fileName, int partitions)
     spdlog::info("reading the points buffer");
     dataset_points.read(model->gpu.hssoa.host_buffer, H5::PredType::NATIVE_DOUBLE);
     spdlog::info("reading poings buffer - done");
+
+    // read indenter accumulator (in case it needs to be saved as animation snapshot)
+    H5::DataSet dataset_indenter = file.openDataSet("Indenter");
+    dataset_indenter.read(model->gpu.indenter_sensor_total.data(), H5::PredType::NATIVE_DOUBLE);
 
     file.close();
 

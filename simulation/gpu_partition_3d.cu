@@ -231,13 +231,11 @@ void GPU_Partition_3D::reset_grid()
 void GPU_Partition_3D::p2g()
 {
     cudaSetDevice(Device);
-    const int gridX = prms->GridXTotal; // todo: change to gridx_partition
-    const int gridXoffset = GridX_offset;
 
     const int &n = nPts_partition;
     const int &tpb = prms->tpb_P2G;
     const int blocksPerGrid = (n + tpb - 1) / tpb;
-    partition_kernel_p2g<<<blocksPerGrid, tpb, 0, streamCompute>>>(gridX, gridXoffset, nGridPitch,
+    partition_kernel_p2g<<<blocksPerGrid, tpb, 0, streamCompute>>>(GridX_partition, GridX_offset, nGridPitch,
                          nPts_partition, nPtsPitch, pts_array, grid_array);
     if(cudaGetLastError() != cudaSuccess) throw std::runtime_error("p2g kernel");
 }

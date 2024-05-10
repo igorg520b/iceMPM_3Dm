@@ -83,6 +83,7 @@ public:
     int gbOffset;
     double cellsize_inv, Dp_inv;
     int tpb_P2G, tpb_Upd, tpb_G2P;  // threads per block for each operation
+    double animation_threshold_pos;
 
     void Reset();
     std::string ParseFile(std::string fileName);

@@ -51,6 +51,7 @@ void SimParams3D::Reset()
     RebalanceThresholdDisabledPercentage = 0.05;
     PointTransferFrequency = 2;
     SnapshotPeriod = 100;
+    animation_threshold_pos = 5e-4;
 
     ComputeLame();
     ComputeCamClayParams();
@@ -128,6 +129,8 @@ std::string SimParams3D::ParseFile(std::string fileName)
     if(doc.HasMember("RebalanceThresholdFreeSpaceRemaining")) RebalanceThresholdFreeSpaceRemaining = doc["RebalanceThresholdFreeSpaceRemaining"].GetDouble();
     if(doc.HasMember("RebalanceThresholdDisabledPercentage")) RebalanceThresholdDisabledPercentage = doc["RebalanceThresholdDisabledPercentage"].GetDouble();
     if(doc.HasMember("PointsTransferBufferFraction")) PointsTransferBufferFraction = doc["PointsTransferBufferFraction"].GetDouble();
+
+    if(doc.HasMember("animation_threshold_pos")) animation_threshold_pos = doc["animation_threshold_pos"].GetDouble();
 
     ComputeCamClayParams();
     ComputeHelperVariables();
@@ -243,7 +246,6 @@ void SimParams3D::SaveParametersAsAttributes(H5::DataSet &ds)
     att_ParticleMass.write(H5::PredType::NATIVE_DOUBLE, &ParticleMass);
     att_Volume.write(H5::PredType::NATIVE_DOUBLE, &Volume);
 
-
     // multi-GPU parameters
     H5::Attribute att_nPartitions = ds.createAttribute("nPartitions", H5::PredType::NATIVE_INT, att_dspace);
     H5::Attribute att_GridHaloSize = ds.createAttribute("GridHaloSize", H5::PredType::NATIVE_INT, att_dspace);
@@ -252,6 +254,7 @@ void SimParams3D::SaveParametersAsAttributes(H5::DataSet &ds)
     H5::Attribute att_PointsTransferBufferFraction = ds.createAttribute("PointsTransferBufferFraction", H5::PredType::NATIVE_DOUBLE, att_dspace);
     H5::Attribute att_RebalanceThresholdFreeSpaceRemaining = ds.createAttribute("RebalanceThresholdFreeSpaceRemaining", H5::PredType::NATIVE_DOUBLE, att_dspace);
     H5::Attribute att_RebalanceThresholdDisabledPercentage = ds.createAttribute("RebalanceThresholdDisabledPercentage", H5::PredType::NATIVE_DOUBLE, att_dspace);
+    H5::Attribute att_animation_threshold_pos = ds.createAttribute("animation_threshold_pos", H5::PredType::NATIVE_DOUBLE, att_dspace);
 
     att_nPartitions.write(H5::PredType::NATIVE_INT, &nPartitions);
     att_GridHaloSize.write(H5::PredType::NATIVE_INT, &GridHaloSize);
@@ -260,6 +263,7 @@ void SimParams3D::SaveParametersAsAttributes(H5::DataSet &ds)
     att_PointsTransferBufferFraction.write(H5::PredType::NATIVE_DOUBLE, &PointsTransferBufferFraction);
     att_RebalanceThresholdFreeSpaceRemaining.write(H5::PredType::NATIVE_DOUBLE, &RebalanceThresholdFreeSpaceRemaining);
     att_RebalanceThresholdDisabledPercentage.write(H5::PredType::NATIVE_DOUBLE, &RebalanceThresholdDisabledPercentage);
+    att_animation_threshold_pos.write(H5::PredType::NATIVE_DOUBLE, &animation_threshold_pos);
 }
 
 
@@ -368,6 +372,14 @@ void SimParams3D::ReadParametersFromAttributes(H5::DataSet &ds)
     att_PointsTransferBufferFraction.read(H5::PredType::NATIVE_DOUBLE, &PointsTransferBufferFraction);
     att_RebalanceThresholdFreeSpaceRemaining.read(H5::PredType::NATIVE_DOUBLE, &RebalanceThresholdFreeSpaceRemaining);
     att_RebalanceThresholdDisabledPercentage.read(H5::PredType::NATIVE_DOUBLE, &RebalanceThresholdDisabledPercentage);
+
+
+    // Check if the attribute "attribute_name" exists in the dataset "dataset_name"
+    if(H5Aexists(ds.getId(), "animation_threshold_pos") > 0)
+    {
+        H5::Attribute att_animation_threshold_pos = ds.openAttribute("animation_threshold_pos");
+        att_animation_threshold_pos.read(H5::PredType::NATIVE_DOUBLE, &animation_threshold_pos);
+    }
 
     ComputeCamClayParams();
     ComputeHelperVariables();

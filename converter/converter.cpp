@@ -63,7 +63,7 @@ void Converter::read_full_frame(H5::H5File &file, H5::DataSet &dataset_indenter)
         H5::Attribute att_dt = dataset_indenter.openAttribute("InitialTimeStep");
         att_dt.read(H5::PredType::NATIVE_DOUBLE, &dt);
     }
-    dataset_full.read(v.data(), VisualPoint::ctVisualPoint);
+    if(need_to_read_points) dataset_full.read(v.data(), VisualPoint::ctVisualPoint);
     std::fill(last_pos_refresh_frame.begin(), last_pos_refresh_frame.end(),frame);
 }
 
@@ -85,56 +85,59 @@ void Converter::read_partial_frame(H5::H5File &file)
         ds_pos.read(update_pos_vel.data(), VisualPoint::ctUpdPV);
     }
 
-    for(int i=0; i<update_pos_vel.size(); i++)
+    if(need_to_read_points)
     {
-        std::pair<int, std::array<float,6>> &p = update_pos_vel[i];
-        int pt_idx = p.first;
-        std::array<float,6> &vals = p.second;
-        last_pos_refresh_frame[pt_idx] = frame;
-        VisualPoint &vp = v[pt_idx];
-        vp.pos[0] = vals[0];
-        vp.pos[1] = vals[1];
-        vp.pos[2] = vals[2];
-        vp.vel[0] = vals[3];
-        vp.vel[1] = vals[4];
-        vp.vel[2] = vals[5];
-    }
+        for(int i=0; i<update_pos_vel.size(); i++)
+        {
+            std::pair<int, std::array<float,6>> &p = update_pos_vel[i];
+            int pt_idx = p.first;
+            std::array<float,6> &vals = p.second;
+            last_pos_refresh_frame[pt_idx] = frame;
+            VisualPoint &vp = v[pt_idx];
+            vp.pos[0] = vals[0];
+            vp.pos[1] = vals[1];
+            vp.pos[2] = vals[2];
+            vp.vel[0] = vals[3];
+            vp.vel[1] = vals[4];
+            vp.vel[2] = vals[5];
+        }
 
-    // update status
+        // update status
 
-    if(H5Lexists(file.getId(), "UpdateStatus", H5P_DEFAULT ) > 0)
-    {
-        H5::DataSet ds_status = file.openDataSet("UpdateStatus");
-        hsize_t n;
-        ds_status.getSpace().getSimpleExtentDims(&n, NULL);
-        update_status.resize(n);
-        ds_status.read(update_status.data(), VisualPoint::ctUpdS);
-    }
+        if(H5Lexists(file.getId(), "UpdateStatus", H5P_DEFAULT ) > 0)
+        {
+            H5::DataSet ds_status = file.openDataSet("UpdateStatus");
+            hsize_t n;
+            ds_status.getSpace().getSimpleExtentDims(&n, NULL);
+            update_status.resize(n);
+            ds_status.read(update_status.data(), VisualPoint::ctUpdS);
+        }
 
-    for(int i=0; i<update_status.size(); i++)
-    {
-        std::pair<int, uint8_t> &p = update_status[i];
-        int pt_idx = p.first;
-        uint8_t val = p.second;
-        v[pt_idx].status = val;
-    }
+        for(int i=0; i<update_status.size(); i++)
+        {
+            std::pair<int, uint8_t> &p = update_status[i];
+            int pt_idx = p.first;
+            uint8_t val = p.second;
+            v[pt_idx].status = val;
+        }
 
-    // update Jp
-    if(H5Lexists(file.getId(), "UpdateJp", H5P_DEFAULT ) > 0)
-    {
-        H5::DataSet ds_jp = file.openDataSet("UpdateJp");
-        hsize_t n;
-        ds_jp.getSpace().getSimpleExtentDims(&n, NULL);
-        update_Jp.resize(n);
-        ds_jp.read(update_Jp.data(), VisualPoint::ctUpdJp);
-    }
+        // update Jp
+        if(H5Lexists(file.getId(), "UpdateJp", H5P_DEFAULT ) > 0)
+        {
+            H5::DataSet ds_jp = file.openDataSet("UpdateJp");
+            hsize_t n;
+            ds_jp.getSpace().getSimpleExtentDims(&n, NULL);
+            update_Jp.resize(n);
+            ds_jp.read(update_Jp.data(), VisualPoint::ctUpdJp);
+        }
 
-    for(int i=0; i<update_Jp.size(); i++)
-    {
-        std::pair<int, float> &p = update_Jp[i];
-        int pt_idx = p.first;
-        float Jp_inv = p.second;
-        v[pt_idx].Jp_inv = Jp_inv;
+        for(int i=0; i<update_Jp.size(); i++)
+        {
+            std::pair<int, float> &p = update_Jp[i];
+            int pt_idx = p.first;
+            float Jp_inv = p.second;
+            v[pt_idx].Jp_inv = Jp_inv;
+        }
     }
 }
 
@@ -333,6 +336,8 @@ void Converter::save_indenter_total()
 void Converter::process_subset(const int _frame_start, int count, std::string directory,
                                bool bgeo, bool paraview, bool paraview_intact)
 {
+    need_to_read_points = (bgeo || paraview || paraview_intact);
+
     this->frame_start = _frame_start;
     spdlog::info("process_subset; frame_start {}; count {}", frame_start, count);
 

@@ -32,7 +32,8 @@ int main(int argc, char** argv)
 
     options.add_options()
         ("d,directory", "Directory with frames in HDF5 format", cxxopts::value<std::string>())
-        ("f,frames", "Number of frames to convert", cxxopts::value<int>()->default_value("2400"))
+        ("s,startframe", "Start frame frame to convert (must be full frame)", cxxopts::value<int>()->default_value("0"))
+        ("e,endframe", "End frame frame to convert", cxxopts::value<int>()->default_value("2399"))
         ("t,threads", "Number of threads to run in parallel", cxxopts::value<int>()->default_value("1"))
         ("b,bgeo", "Export as BGEO", cxxopts::value<bool>())
         ("p,paraview", "Export for Paraview", cxxopts::value<bool>())
@@ -47,9 +48,11 @@ int main(int argc, char** argv)
     bool export_bgeo = option_parse_result.count("bgeo");
     bool export_paraview = option_parse_result.count("paraview");
     bool export_intact = option_parse_result.count("intact");
-    int frames = option_parse_result["frames"].as<int>();
+    int endframe = option_parse_result["endframe"].as<int>();
+    int startframe = option_parse_result["startframe"].as<int>();
     int count_threads = option_parse_result["threads"].as<int>();
-    spdlog::info("frames {}; threads {}; paraview {}; bgeo {}", frames, count_threads, export_paraview, export_bgeo);
+    spdlog::info("startframe {}; endframe {}; threads {}; paraview {}; bgeo {}", startframe, endframe,
+                 count_threads, export_paraview, export_bgeo);
 
     std::filesystem::path od(Converter::directory_output);
     std::filesystem::path od1(std::string(Converter::directory_output) + "/" + std::string(Converter::directory_bgeo));
@@ -69,18 +72,18 @@ int main(int argc, char** argv)
     Converter::accessing_indenter_force_file = &accessing_indenter_force_file;
 
     H5::H5File file(std::string(Converter::directory_output) + "/indenter.h5", H5F_ACC_TRUNC);
-    hsize_t dims_indenter[2] = {(hsize_t)frames,5};
+    hsize_t dims_indenter[2] = {(hsize_t)endframe+1,5};
     H5::DataSpace dataspace_indenter(2, dims_indenter);
     H5::DataSet dataset_indenter = file.createDataSet("IndenterTotals", H5::PredType::NATIVE_DOUBLE, dataspace_indenter);
     Converter::dataset_indenter_totals = &dataset_indenter;
-    Converter::frames_total = frames;
+    Converter::frames_total = endframe+1;
 
     omp_set_num_threads(count_threads);
 
 #pragma omp parallel for schedule(dynamic, 1)
-    for(int i=0; i<frames; i+=block_size)
+    for(int i=startframe; i<=endframe; i+=block_size)
     {
-        int remaining = std::min(frames-i, block_size);
+        int remaining = std::min(endframe-i+1, block_size);
         spdlog::info("thread {}; processing frames {} to {}", omp_get_thread_num(), i, i+remaining);
         Converter c;
         c.process_subset(i, remaining, frames_directory, export_bgeo, export_paraview, export_intact);

@@ -20,7 +20,7 @@
 "IceTensileStrength2":10e6,
 "IceShearStrength":7e6,
 "DP_phi":70,
-"DP_threshold_p":0,
+"DP_threshold_p":1e2,
 
 "SimulationEndTime":12,
 "PoissonsRatio":0.3,

@@ -71,8 +71,8 @@ bool Model3D::Step()
 
     if(max_pt_deviation > prms.GridHaloSize/2) prms.PointTransferFrequency++; // transfer points more often if any risk
 
-    spdlog::info("{:^3s} {:^8s} {:^8s} {:^7s} {:^3s} {:^3s} | {:^5s} {:^5s} {:^5s} | {:^5s} {:^5s} {:^5s} {:^5s} {:^5s} | {:^6s}",
-                 "P-D",    "pts",  "free", "dis","msn", "mdv", "p2g",  "s2",  "S12",     "u",  "g2p", "psnt", "prcv","S36", "tot");
+    spdlog::info("{:^3s} {:^8s} {:^8s} {:^7s} {:^3s} {:^3s} | {:^6s} {:^5s} {:^6s} | {:^5s} {:^6s} {:^5s} {:^5s} {:^5s} | {:^6s}",
+                 "P-D",    "pts",  "free", "dis","msn", "mdv", "p2g",  "s2",  "S12",   "u",  "g2p", "psnt", "prcv","S36", "tot");
     bool rebalance = false;
     for(GPU_Partition_3D &p : gpu.partitions)
     {
@@ -82,7 +82,7 @@ bool Model3D::Step()
         if(freeSpacePercentage < prms.RebalanceThresholdFreeSpaceRemaining) rebalance = true;
         if(disabledPercentage > prms.RebalanceThresholdDisabledPercentage) rebalance = true;
 
-        spdlog::info("{:>1}-{:>1} {:>8} {:>8} {:>7} {:>3} {:>3} | {:>5.0f} {:>5.0f} {:>5.0f} | {:>5.0f} {:>5.0f} {:>5.0f} {:5.0f} {:5.0f} | {:>6.0f}",
+        spdlog::info("{:>1}-{:>1} {:>8} {:>8} {:>7} {:>3} {:>3} | {:>6.0f} {:>5.0f} {:>6.0f} | {:>5.0f} {:>6.0f} {:>5.0f} {:5.0f} {:5.0f} | {:>6.0f}",
                      p.PartitionID, p.Device, p.nPts_partition, (p.nPtsPitch-p.nPts_partition), p.nPts_disabled, p.max_pts_sent, p.max_pt_deviation,
                      p.timing_10_P2GAndHalo, p.timing_20_acceptHalo, (p.timing_10_P2GAndHalo + p.timing_20_acceptHalo),
                      p.timing_30_updateGrid, p.timing_40_G2P, p.timing_60_ptsSent, p.timing_70_ptsAccepted,

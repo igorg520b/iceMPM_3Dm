@@ -34,7 +34,7 @@ To create an initial snapshot (.h5) from a JSON file:
 
 Converting the resulting HDF5 data into Paraview and/or BGEO formats:
 
-> -d _snapshots_animation -t 12 -f 2400 -p -b -i
+> conv --directory _snapshots_animation -threads 10 --startframe 0 --endframe 2399 --paraview -intact --bgeo
 
 Converting screenshots into video with ffmpeg:
 
