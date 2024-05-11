@@ -59,12 +59,14 @@ int main(int argc, char** argv)
     std::filesystem::path od2(std::string(Converter::directory_output) + "/" + std::string(Converter::directory_points));
     std::filesystem::path od2b(std::string(Converter::directory_output) + "/" + std::string(Converter::directory_points_intact));
     std::filesystem::path od3(std::string(Converter::directory_output) + "/" + std::string(Converter::directory_indenter));
+    std::filesystem::path od3b(std::string(Converter::directory_output) + "/" + std::string(Converter::directory_indenter_hdf5));
     std::filesystem::path od4(std::string(Converter::directory_output) + "/" + std::string(Converter::directory_sensor));
     if(!std::filesystem::is_directory(od) || !std::filesystem::exists(od)) std::filesystem::create_directory(od);
     if(!std::filesystem::is_directory(od1) || !std::filesystem::exists(od1)) std::filesystem::create_directory(od1);
     if(!std::filesystem::is_directory(od2) || !std::filesystem::exists(od2)) std::filesystem::create_directory(od2);
     if(!std::filesystem::is_directory(od2b) || !std::filesystem::exists(od2b)) std::filesystem::create_directory(od2b);
     if(!std::filesystem::is_directory(od3) || !std::filesystem::exists(od3)) std::filesystem::create_directory(od3);
+    if(!std::filesystem::is_directory(od3b) || !std::filesystem::exists(od3b)) std::filesystem::create_directory(od3b);
     if(!std::filesystem::is_directory(od4) || !std::filesystem::exists(od4)) std::filesystem::create_directory(od4);
 
     VisualPoint::InitializeStatic();
@@ -77,6 +79,31 @@ int main(int argc, char** argv)
     H5::DataSet dataset_indenter = file.createDataSet("IndenterTotals", H5::PredType::NATIVE_DOUBLE, dataspace_indenter);
     Converter::dataset_indenter_totals = &dataset_indenter;
     Converter::frames_total = endframe+1;
+
+    // open the first frame and get indenter dimensions
+    char fileName[20];
+    snprintf(fileName, sizeof(fileName), "v%05d.h5", startframe);
+    std::string fullFilePath = frames_directory + "/" + fileName;
+
+    H5::H5File file2(fullFilePath, H5F_ACC_RDONLY);
+    H5::DataSet dataset_indenter2 = file2.openDataSet("Indenter");
+    H5::Attribute att_GridZ = dataset_indenter2.openAttribute("GridZ");
+    H5::Attribute att_IndenterSubdividions = dataset_indenter2.openAttribute("IndenterSubdivisions");
+    int gridz, indentersubdivisions;
+    att_GridZ.read(H5::PredType::NATIVE_INT, &gridz);
+    att_IndenterSubdividions.read(H5::PredType::NATIVE_INT, &indentersubdivisions);
+    file2.close();
+
+    // create a summarized one-file indenter pressure table
+    hsize_t tekscan[3] = {(hsize_t)endframe+1,(hsize_t)indentersubdivisions, (hsize_t)gridz};
+    hsize_t chunk[3] = {(hsize_t)10, (hsize_t)indentersubdivisions/10, (hsize_t)gridz};
+    H5::DataSpace dataspace_tekscan(3, tekscan);
+    H5::DSetCreatPropList proplist2;
+    proplist2.setChunk(3, chunk);
+    proplist2.setDeflate(7);
+    H5::DataSet dataset_tekscan = file.createDataSet("IndenterTekscan", H5::PredType::NATIVE_DOUBLE, dataspace_tekscan, proplist2);
+    Converter::dataset_tekscan = &dataset_tekscan;
+
 
     omp_set_num_threads(count_threads);
 

@@ -2,7 +2,7 @@
 
 std::mutex *Converter::accessing_indenter_force_file;
 H5::DataSet *Converter::dataset_indenter_totals;
-//H5::DataSpace *Converter::dataspace;
+H5::DataSet *Converter::dataset_tekscan;
 int Converter::frames_total;
 
 
@@ -33,7 +33,6 @@ Converter::Converter()
     polydata->GetPointData()->AddArray(values_Jp);
     polydata->GetPointData()->AddArray(values_partitions);
     writer1->SetInputData(polydata);
-
 }
 
 void Converter::read_full_frame(H5::H5File &file, H5::DataSet &dataset_indenter)
@@ -328,6 +327,17 @@ void Converter::save_indenter_total()
     H5::DataSpace dataspace_mem(2, dims_mem);
 
     dataset_indenter_totals->write(force, H5::PredType::NATIVE_DOUBLE, dataspace_mem, dataspace);
+
+    // save tekscan
+    hsize_t tekscan[3] = {(hsize_t)frames_total,(hsize_t)IndenterSubdivisions, (hsize_t)GridZ};
+    H5::DataSpace dataspace_tekscan(3, tekscan);
+
+    hsize_t count_tekscan[3] = {1, (hsize_t)IndenterSubdivisions, (hsize_t)GridZ};
+    H5::DataSpace dataspace_tekscan_mem(3, count_tekscan);
+    hsize_t offset_tekscan[3] = {(hsize_t)frame, 0,0};
+    dataspace_tekscan.selectHyperslab(H5S_SELECT_SET, count_tekscan, offset_tekscan);
+    dataset_tekscan->write(indenter_data.data(), H5::PredType::NATIVE_DOUBLE, dataspace_tekscan_mem, dataspace_tekscan);
+
     accessing_indenter_force_file->unlock();
 }
 

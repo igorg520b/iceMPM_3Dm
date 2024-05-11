@@ -43,9 +43,17 @@ void SnapshotManager::SaveFrame(std::string outputDirectory, const int frame)
     H5::DataSet dataset_indenter = file.createDataSet("Indenter", H5::PredType::NATIVE_DOUBLE, dataspace_indenter, proplist2);
     dataset_indenter.write(model->gpu.indenter_sensor_total.data(), H5::PredType::NATIVE_DOUBLE);
 
-    // type of frame
+    model->gpu.evaluate_indenter_total_force();
     hsize_t att_dim = 1;
     H5::DataSpace att_dspace(1, &att_dim);
+    H5::Attribute att_ind_total_x = dataset_indenter.createAttribute("indenter_total_x", H5::PredType::NATIVE_DOUBLE, att_dspace);
+    H5::Attribute att_ind_total_y = dataset_indenter.createAttribute("indenter_total_y", H5::PredType::NATIVE_DOUBLE, att_dspace);
+    H5::Attribute att_ind_total_z = dataset_indenter.createAttribute("indenter_total_z", H5::PredType::NATIVE_DOUBLE, att_dspace);
+    att_ind_total_x.write(H5::PredType::NATIVE_DOUBLE, &model->gpu.indenter_force[0]);
+    att_ind_total_y.write(H5::PredType::NATIVE_DOUBLE, &model->gpu.indenter_force[1]);
+    att_ind_total_z.write(H5::PredType::NATIVE_DOUBLE, &model->gpu.indenter_force[2]);
+
+    // type of frame
     uint8_t prev_frame = previous_frame_exists ? 1 : 0;
     H5::Attribute att = dataset_indenter.createAttribute("partial_frame", H5::PredType::NATIVE_UINT8, att_dspace);
     att.write(H5::PredType::NATIVE_UINT8, &prev_frame);
@@ -350,13 +358,9 @@ void SnapshotManager::ReadSnapshot(std::string fileName, int partitions)
     // read point data
     spdlog::info("reading the points buffer");
     dataset_points.read(model->gpu.hssoa.host_buffer, H5::PredType::NATIVE_DOUBLE);
-    spdlog::info("reading poings buffer - done");
+    spdlog::info("reading points buffer - done");
 
-    // read indenter accumulator (in case it needs to be saved as animation snapshot)
-    H5::DataSet dataset_indenter = file.openDataSet("Indenter");
-    dataset_indenter.read(model->gpu.indenter_sensor_total.data(), H5::PredType::NATIVE_DOUBLE);
 
-    file.close();
 
     // distribute into partitions
     // always squeeze/sort before saving
@@ -375,5 +379,15 @@ void SnapshotManager::ReadSnapshot(std::string fileName, int partitions)
     model->Prepare();
 
     previous_frame_exists = false;
+
+
+    // read indenter accumulator (in case it needs to be saved as animation snapshot)
+    H5::DataSet dataset_indenter = file.openDataSet("Indenter");
+    spdlog::info("reading Indenter dataset into model->gpu.indenter_sensor_total: {}",model->gpu.indenter_sensor_total.size());
+    dataset_indenter.read(model->gpu.indenter_sensor_total.data(), H5::PredType::NATIVE_DOUBLE);
+    spdlog::info("closing file {}", fileName);
+
+    file.close();
+
     spdlog::info("SnapshotManager::ReadSnapshot() done");
 }

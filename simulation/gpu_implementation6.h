@@ -42,6 +42,7 @@ public:
     void update_constants();
     void reset_grid();
     void reset_indenter_force_accumulator();
+    void evaluate_indenter_total_force();
 
     void p2g();
     void receive_halos();

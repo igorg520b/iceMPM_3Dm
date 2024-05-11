@@ -43,10 +43,12 @@ public:
     constexpr static std::string_view directory_points = "points";
     constexpr static std::string_view directory_points_intact = "points_intact";
     constexpr static std::string_view directory_indenter = "indenter";
+    constexpr static std::string_view directory_indenter_hdf5 = "indenter_hdf5";
     constexpr static std::string_view directory_sensor = "sensor";
 
     static std::mutex *accessing_indenter_force_file;
     static H5::DataSet *dataset_indenter_totals;
+    static H5::DataSet *dataset_tekscan;
     static int frames_total;
 
     void process_subset(const int frame_start, int count, std::string directory, bool bgeo, bool paraview, bool paraview_intact);
