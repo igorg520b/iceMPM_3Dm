@@ -60,6 +60,7 @@ private:
     std::vector<std::pair<int, uint8_t>> update_status;
     std::vector<int> last_pos_refresh_frame;
     std::vector<double> indenter_data;
+    std::vector<double> indenter_data_norm;
     bool need_to_read_points; // no need if only indenter force is exported
 
     int IndenterSubdivisions, GridZ, UpdateEveryNthStep;

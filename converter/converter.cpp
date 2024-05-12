@@ -51,6 +51,7 @@ void Converter::read_full_frame(H5::H5File &file, H5::DataSet &dataset_indenter)
         H5::Attribute att_GridZ = dataset_indenter.openAttribute("GridZ");
         att_GridZ.read(H5::PredType::NATIVE_INT, &GridZ);
         indenter_data.resize(3*GridZ*IndenterSubdivisions);
+        indenter_data_norm.resize(GridZ*IndenterSubdivisions);
 
         H5::Attribute att_UpdateEveryNthStep = dataset_indenter.openAttribute("UpdateEveryNthStep");
         att_UpdateEveryNthStep.read(H5::PredType::NATIVE_INT, &UpdateEveryNthStep);
@@ -302,11 +303,17 @@ void Converter::save_indenter_total()
 {
     double force[5] {};
     for(int j=0; j<IndenterSubdivisions*GridZ; j++)
+    {
         for(int k=0;k<3;k++)
         {
             int idx = j*3+k;
             force[k+1] += indenter_data[idx];
+
         }
+        double fx = indenter_data[j*3+0];
+        double fy = indenter_data[j*3+1];
+        indenter_data_norm[j] = sqrt(fx*fx+fy*fy);
+    }
     double hsq = cellsize*cellsize;
     force[0] = SimulationTime;
     force[1] *= hsq;
@@ -336,7 +343,7 @@ void Converter::save_indenter_total()
     H5::DataSpace dataspace_tekscan_mem(3, count_tekscan);
     hsize_t offset_tekscan[3] = {(hsize_t)frame, 0,0};
     dataspace_tekscan.selectHyperslab(H5S_SELECT_SET, count_tekscan, offset_tekscan);
-    dataset_tekscan->write(indenter_data.data(), H5::PredType::NATIVE_DOUBLE, dataspace_tekscan_mem, dataspace_tekscan);
+    dataset_tekscan->write(indenter_data_norm.data(), H5::PredType::NATIVE_DOUBLE, dataspace_tekscan_mem, dataspace_tekscan);
 
     accessing_indenter_force_file->unlock();
 }
