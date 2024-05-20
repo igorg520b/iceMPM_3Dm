@@ -18,6 +18,7 @@
 "IceShearStrength":7e6,
 "DP_phi":70,
 "DP_threshold_p":1e2,
+"animation_threshold_pos":1e-3,
 
 "SimulationEndTime":12,
 "PoissonsRatio":0.3,

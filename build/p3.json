@@ -1,6 +1,6 @@
 {
 "InputRawPoints":"geometries_3d/3d_10m.h5",
-"nPartitions":4,
+"nPartitions":1,
 "GridHaloSize":15,
 "ExtraSpaceForIncomingPoints":0.2,
 
@@ -16,8 +16,9 @@
 "IceTensileStrength":10e6,
 "IceTensileStrength2":10e6,
 "IceShearStrength":7e6,
-"DP_phi":70,
+"DP_phi":45,
 "DP_threshold_p":1e2,
+"animation_threshold_pos":1e-3,
 
 "SimulationEndTime":12,
 "PoissonsRatio":0.3,
