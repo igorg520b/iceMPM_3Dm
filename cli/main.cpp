@@ -34,6 +34,8 @@ int main(int argc, char** argv)
         ("r,resume", "Resume from a full snapshot (.h5) file", cxxopts::value<std::string>())
         ("p,partitions", "Number of partitions (if different from snapshot)", cxxopts::value<int>()->default_value("-1"))
         ("period", "Snapshot record period (in number of frames)", cxxopts::value<int>())
+        ("dpthreshold", "Override DP threshold value", cxxopts::value<double>())
+        ("phi", "Override Phi value (in degrees)", cxxopts::value<double>())
         ;
     options.parse_positional({"file"});
 
@@ -54,6 +56,9 @@ int main(int argc, char** argv)
         std::string pointCloudFile = model.prms.ParseFile(params_file);
         snapshot.LoadRawPoints(pointCloudFile);
     }
+
+    if(option_parse_result.count("dpthreshold")) model.prms.DP_threshold_p = option_parse_result["dpthreshold"].as<double>();
+    if(option_parse_result.count("phi")) model.prms.SetPhi(option_parse_result["phi"].as<double>());
 
     if(option_parse_result.count("snapshot"))
     {

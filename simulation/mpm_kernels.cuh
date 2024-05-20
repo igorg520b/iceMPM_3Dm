@@ -52,7 +52,6 @@ __global__ void partition_kernel_p2g(const int gridX, const int gridX_offset, co
 
     Matrix3d PFt = KirchhoffStress_Wolper(Fe);
     Matrix3d subterm2 = particle_mass*Bp - (gprms.dt_vol_Dpinv)*PFt;
-//    Matrix2d subterm2 = particle_mass*Bp - (gprms.InitialTimeStep*gprms.ParticleVolume*gprms.Dp_inv)*PFt;
 
     Eigen::Vector3i base_coord_i = (pos*h_inv - Vector3d::Constant(0.5)).cast<int>(); // coords of base grid node for point
     Vector3d base_coord = base_coord_i.cast<double>();
@@ -510,7 +509,7 @@ __device__ Matrix3d KirchhoffStress_Wolper(const Matrix3d &F)
     // Kirchhoff stress as per Wolper (2019)
     double Je = F.determinant();
     Matrix3d b = F*F.transpose();
-    Matrix3d PFt = mu*pow(Je, -2./SimParams3D::dim)*dev(b) + kappa*(Je*Je-1.)*Matrix3d::Identity();
+    Matrix3d PFt = mu*pow(Je, -2./SimParams3D::dim)*dev(b) + kappa*0.5*(Je*Je-1.)*Matrix3d::Identity();
     return PFt;
 }
 

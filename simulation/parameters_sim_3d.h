@@ -93,6 +93,8 @@ public:
     void ComputeLame();
     void ComputeCamClayParams();
     void ComputeHelperVariables();
+    void SetPhi(double phi) {std::tan(phi*pi/180.);};
+
 
     double PointsPerCell() {return nPtsTotal/(Volume/(cellsize*cellsize*cellsize));}
     int AnimationFrameNumber() { return SimulationStep / UpdateEveryNthStep;}

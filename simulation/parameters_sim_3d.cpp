@@ -31,7 +31,7 @@ void SimParams3D::Reset()
     IceShearStrength = 6e6;
     IceTensileStrength2 = 5e6;
 
-    DP_tan_phi = std::tan(70*pi/180.);
+    SetPhi(45);
     DP_threshold_p = 1e2;
 
     tpb_P2G = 256;
@@ -115,7 +115,7 @@ std::string SimParams3D::ParseFile(std::string fileName)
     if(doc.HasMember("IceTensileStrength2")) IceTensileStrength2 = doc["IceTensileStrength2"].GetDouble();
     if(doc.HasMember("IceShearStrength")) IceShearStrength = doc["IceShearStrength"].GetDouble();
 
-    if(doc.HasMember("DP_phi")) DP_tan_phi = std::tan(doc["DP_phi"].GetDouble()*pi/180);
+    if(doc.HasMember("DP_phi")) SetPhi(doc["DP_phi"].GetDouble());
     if(doc.HasMember("DP_threshold_p")) DP_threshold_p = doc["DP_threshold_p"].GetDouble();
     if(doc.HasMember("GrainVariability")) GrainVariability = doc["GrainVariability"].GetDouble();
 
@@ -143,6 +143,7 @@ std::string SimParams3D::ParseFile(std::string fileName)
 
     std::string result = doc["InputRawPoints"].GetString();
     spdlog::info("Loaded parameters; grid [{} x {} x {}] pointFile {}",GridXTotal, GridY, GridZ, result);
+    spdlog::info("DP_threshold_p {}", DP_threshold_p);
     return result;
 }
 
@@ -219,6 +220,7 @@ void SimParams3D::SaveParametersAsAttributes(H5::DataSet &ds)
     att_IceTensileStrength2.write(H5::PredType::NATIVE_DOUBLE, &IceTensileStrength2);
     att_IceShearStrength.write(H5::PredType::NATIVE_DOUBLE, &IceShearStrength);
     att_DP_tan_phi.write(H5::PredType::NATIVE_DOUBLE, &DP_tan_phi);
+    att_DP_threshold_p.write(H5::PredType::NATIVE_DOUBLE, &DP_threshold_p);
     att_GrainVariability.write(H5::PredType::NATIVE_DOUBLE, &GrainVariability);
 
     // indenter: location, diameter, and velocity
@@ -235,7 +237,6 @@ void SimParams3D::SaveParametersAsAttributes(H5::DataSet &ds)
     att_indenter_y_initial.write(H5::PredType::NATIVE_DOUBLE, &indenter_y_initial);
     att_IndDiameter.write(H5::PredType::NATIVE_DOUBLE, &IndDiameter);
     att_IndVelocity.write(H5::PredType::NATIVE_DOUBLE, &IndVelocity);
-
 
     // parameters of the points / total volume of the solid
     H5::Attribute att_ParticleVolume = ds.createAttribute("ParticleVolume", H5::PredType::NATIVE_DOUBLE, att_dspace);

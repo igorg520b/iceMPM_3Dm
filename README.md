@@ -24,7 +24,7 @@ A simulation can be started with a JSON configuration file via:
 
 > cm3 startfile.json
 
-A simulation can be "resumed" from a full snapshot via:
+A simulation can be resumed from a full snapshot via:
 
 > cm3 --resume snapshot_file.h5 --partitions 4
 
@@ -32,10 +32,12 @@ To create an initial snapshot (.h5) from a JSON file:
 
 > cm3 startfile.json --snapshot
 
+## Post-processing
+
 Converting the resulting HDF5 data into Paraview and/or BGEO formats:
 
-> conv --directory _snapshots_animation -threads 10 --startframe 0 --endframe 2399 --paraview -intact --bgeo
+> conv --directory _snapshots_animation --threads 10 --startframe 0 --endframe 2399 --paraview --intact --bgeo
 
-Converting screenshots into video with ffmpeg:
+Converting screenshots to video with ffmpeg:
 
 > ffmpeg -y -r 60 -f image2 -start_number 1 -i "a_%04d.png" -vframes 2399 -vcodec libx264 -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" -crf 15 -pix_fmt yuv420p "result.mp4"
