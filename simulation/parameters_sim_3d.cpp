@@ -51,7 +51,7 @@ void SimParams3D::Reset()
     RebalanceThresholdDisabledPercentage = 0.05;
     PointTransferFrequency = 2;
     SnapshotPeriod = 100;
-    animation_threshold_pos = 5e-4;
+    animation_threshold_pos = 1e-3;
 
     ComputeLame();
     ComputeCamClayParams();

@@ -405,9 +405,9 @@ __device__ void GetParametersForGrain(short grain, double &pmin, double &pmax, d
 
     beta = gprms.NACC_beta;
     //    beta = -pmin / pmax;
-    double NACC_M = (2*qmax*sqrt(1+2*beta))/(pmax*(1+beta));
+    double NACC_M = (2*qmax*sqrt(1+2*beta))/(pmax-pmin);
     mSq = NACC_M*NACC_M;
-    mSq = (4*qmax*qmax*(1+2*beta))/((pmax*(1+beta))*(pmax*(1+beta)));
+//    mSq = (4*qmax*qmax*(1+2*beta))/((pmax*(1+beta))*(pmax*(1+beta)));
 }
 
 
