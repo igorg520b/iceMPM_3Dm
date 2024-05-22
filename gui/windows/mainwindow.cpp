@@ -279,6 +279,14 @@ void MainWindow::simulation_data_ready()
     updateGUI();
     if(ui->actionTake_Screenshots->isChecked())
         screenshot();
+
+    int snapshot_number = model.prms.AnimationFrameNumber();
+    if(snapshot_number % model.prms.SnapshotPeriod == 0)
+        snapshot.SaveSnapshot(snapshot_directory, snapshot_number, true);
+
+    if(snapshot_number % 100 == 0) snapshot.previous_frame_exists = false;
+    snapshot.SaveFrame(animation_frame_directory, snapshot_number);
+
     model.UnlockCycleMutex();
 }
 
@@ -307,6 +315,14 @@ void MainWindow::simulation_start_pause(bool checked)
     {
         qDebug() << "starting simulation via GUI";
         statusLabel->setText("starting simulation");
+
+        int snapshot_number = model.prms.AnimationFrameNumber();
+        if(snapshot_number == 0)
+        {
+            snapshot.previous_frame_exists = false;
+            snapshot.SaveFrame(animation_frame_directory, snapshot_number);
+        }
+
         worker->Resume();
     }
     else if(worker->running && !checked)

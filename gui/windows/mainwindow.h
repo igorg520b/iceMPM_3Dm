@@ -112,7 +112,10 @@ private:
 
     // other
     QString qLastParameterFile;
-    const std::string outputDirectory = "default_output";
+//    const std::string outputDirectory = "default_output";
+    const std::string animation_frame_directory = "_snapshots_animation";
+    const std::string snapshot_directory = "_snapshots";
+
 
     // screenshots
     const std::string screenshot_directory = "screenshots";

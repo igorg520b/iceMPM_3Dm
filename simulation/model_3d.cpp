@@ -67,7 +67,7 @@ bool Model3D::Step()
                  prms.AnimationFrameNumber(), gpu.hssoa.size, gpu.hssoa.capacity, max_points_transferred,
                     max_pt_deviation, prms.PointTransferFrequency);
 
-    spdlog::get("indenter_force")->info("{},{},{},{}",prms.SimulationTime,gpu.indenter_force.x(), gpu.indenter_force.y(), gpu.indenter_force.norm());
+    spdlog::get("indenter_force")->info("{},{},{},{}",prms.SimulationTime,gpu.indenter_force.norm(),gpu.indenter_force.x(), gpu.indenter_force.y());
 
     if(max_pt_deviation > prms.GridHaloSize/2) prms.PointTransferFrequency++; // transfer points more often if any risk
 

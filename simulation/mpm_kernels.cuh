@@ -455,7 +455,6 @@ __device__ void Wolper_Drucker_Prager(Point3D &p)
     const double &tan_phi = gprms.DP_tan_phi;
     const double &DP_threshold_p = gprms.DP_threshold_p;
 
-    //    const double &pmin = -gprms.IceTensileStrength;
     const double &pmax = gprms.IceCompressiveStrength;
     const double &qmax = gprms.IceShearStrength;
 
@@ -466,7 +465,7 @@ __device__ void Wolper_Drucker_Prager(Point3D &p)
         double p_new = -DP_threshold_p;
         double Je_new = sqrt(-2.*p_new/kappa + 1.);
         double cbrt_Je_new = cbrt(Je_new);
-        Vector3d vSigma_new = Vector3d::Constant(1.)*cbrt_Je_new; //Matrix2d::Identity() * pow(Je_new, 1./(double)d);
+        Vector3d vSigma_new(cbrt_Je_new,cbrt_Je_new,cbrt_Je_new); // Vector3d::Constant(1.)*pow(Je_new, 1./(double)d);
         p.Fe = p.U*vSigma_new.asDiagonal()*p.V.transpose();
         p.Jp_inv *= Je_new/p.Je_tr;
     }
@@ -481,9 +480,10 @@ __device__ void Wolper_Drucker_Prager(Point3D &p)
         else
         {
             double q_from_dp = (p.p_tr+DP_threshold_p)*tan_phi;
-            q_n_1 = min(q_from_dp,qmax);
-            //            double q_from_failure_surface = 2*sqrt((pmax-p.p_tr)*(p.p_tr-pmin))*qmax/(pmax-pmin);
-            //            q_n_1 = min(q_from_failure_surface, q_from_dp);
+            //q_n_1 = min(q_from_dp,qmax);
+            const double pmin = -gprms.IceTensileStrength;
+            double q_from_failure_surface = 2*sqrt((pmax-p.p_tr)*(p.p_tr-pmin))*qmax/(pmax-pmin);
+            q_n_1 = min(q_from_failure_surface, q_from_dp);
         }
 
         if(p.q_tr >= q_n_1)

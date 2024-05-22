@@ -74,8 +74,8 @@ int main(int argc, char** argv)
     }
 
     // ensure that the folder exists
-    std::filesystem::path outputFolder(snapshot_directory);
-    std::filesystem::create_directory(outputFolder);
+//    std::filesystem::path outputFolder(snapshot_directory);
+//    std::filesystem::create_directory(outputFolder);
 
     // start the simulation thread
     bool result;
