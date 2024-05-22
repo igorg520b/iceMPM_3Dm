@@ -385,3 +385,53 @@ void SimParams3D::ReadParametersFromAttributes(H5::DataSet &ds)
     ComputeCamClayParams();
     ComputeHelperVariables();
 }
+
+
+void SimParams3D::Printout()
+{
+    spdlog::info("printing simulation parameters:");
+    spdlog::info("nPtsTotal {}",nPtsTotal);
+    spdlog::info("grid {}x{}x{}",GridXTotal, GridY, GridZ);
+    spdlog::info("IndenterSubdivisions {}",IndenterSubdivisions);
+    spdlog::info("DomainDimensionX {}; cellsize {}, cellsize_inv {}",DomainDimensionX, cellsize, cellsize_inv);
+    spdlog::info("InitialTimeStep {}", InitialTimeStep);
+    spdlog::info("SnapshotPeriod {}",SnapshotPeriod);
+    spdlog::info("Gravity {}; Density {}; PoissonsRatio {}; YoungsModulus {}",Gravity, Density, PoissonsRatio, YoungsModulus);
+    spdlog::info("lambda {}; mu {}; kappa {}",lambda, mu, kappa);
+    spdlog::info("IceCompressiveStrength {}; IceTensileStrength {}; IceShearStrength {}; IceTensileStrength2 {}",IceCompressiveStrength, IceTensileStrength, IceShearStrength, IceTensileStrength2);
+    spdlog::info("NACC_beta {}", NACC_beta);
+    spdlog::info("DP_tan_phi {}",DP_tan_phi);
+    spdlog::info("DP_threshold_p {}",DP_threshold_p);
+    spdlog::info("GrainVariability {}",GrainVariability);
+    spdlog::info("IndDiameter {}, IndRSq {}, IndVelocity {}, IndDepth {}",IndDiameter, IndRSq, IndVelocity, IndDepth);
+    spdlog::info("ParticleVolume {}; ParticleMass {}; ParticleViewSize {}", ParticleVolume, ParticleMass, ParticleViewSize);
+//    spdlog::info("{}",);
+    spdlog::info("dt_vol_Dpinv {}, dt_Gravity {}, vmax {}, vmax_squared {}",dt_vol_Dpinv, dt_Gravity, vmax, vmax_squared);
+
+
+/*
+    double ParticleVolume, ParticleMass, ParticleViewSize;
+
+    double indenter_x, indenter_x_initial, indenter_y, indenter_y_initial;
+    double Volume;  // total volume (area) of the object
+
+    // multi-GPU params
+    int nPartitions; // number of partitions (ideally, one partition per device)
+    int GridHaloSize;  // number of grid slices (perpendicular to the x-axis) for "halo" transfers
+    int PointTransferFrequency; // n times per full cycle
+    int VectorCapacity_transfer;   // vector capacity for points that fly to another partition
+    double ExtraSpaceForIncomingPoints;     // percentage of points per partition
+    double PointsTransferBufferFraction;    // space for points that can "fly over" per simulation step
+    double RebalanceThresholdFreeSpaceRemaining;     // % of the total space
+    double RebalanceThresholdDisabledPercentage;
+
+    // computed parameters/properties
+    double dt_vol_Dpinv, dt_Gravity, vmax, vmax_squared;
+    int gbOffset;
+    double cellsize_inv, Dp_inv;
+    int tpb_P2G, tpb_Upd, tpb_G2P;  // threads per block for each operation
+    double animation_threshold_pos;
+
+*/
+
+}

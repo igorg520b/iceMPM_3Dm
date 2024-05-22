@@ -405,8 +405,10 @@ __device__ void GetParametersForGrain(short grain, double &pmin, double &pmax, d
 
     beta = gprms.NACC_beta;
     //    beta = -pmin / pmax;
-    double NACC_M = (2*qmax*sqrt(1+2*beta))/(pmax-pmin);
-    mSq = NACC_M*NACC_M;
+//    double NACC_M = (2*qmax*sqrt(1+2*beta))/(pmax-pmin);
+//    mSq = NACC_M*NACC_M;
+    mSq = (4*qmax*qmax*(1+2*beta))/((pmax-pmin)*(pmax-pmin));
+
 //    mSq = (4*qmax*qmax*(1+2*beta))/((pmax*(1+beta))*(pmax*(1+beta)));
 }
 
@@ -465,7 +467,7 @@ __device__ void Wolper_Drucker_Prager(Point3D &p)
         double p_new = -DP_threshold_p;
         double Je_new = sqrt(-2.*p_new/kappa + 1.);
         double cbrt_Je_new = cbrt(Je_new);
-        Vector3d vSigma_new(cbrt_Je_new,cbrt_Je_new,cbrt_Je_new); // Vector3d::Constant(1.)*pow(Je_new, 1./(double)d);
+        Vector3d vSigma_new = Vector3d::Constant(1.)*cbrt_Je_new; // pow(Je_new, 1./(double)d);
         p.Fe = p.U*vSigma_new.asDiagonal()*p.V.transpose();
         p.Jp_inv *= Je_new/p.Je_tr;
     }

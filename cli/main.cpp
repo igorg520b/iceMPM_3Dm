@@ -77,6 +77,7 @@ int main(int argc, char** argv)
 //    std::filesystem::path outputFolder(snapshot_directory);
 //    std::filesystem::create_directory(outputFolder);
 
+    model.prms.Printout();
     // start the simulation thread
     bool result;
     do

@@ -13,6 +13,7 @@
 #include <rapidjson/writer.h>
 
 #include <H5Cpp.h>
+#include <spdlog/spdlog.h>
 // various settings and constants of the model
 
 
@@ -38,7 +39,7 @@ public:
     int SetupType;  // 0 - ice block horizontal indentation; 1 - cone uniaxial compression
 
     int nPtsTotal;
-    int GridXTotal, GridY, GridZ, GridTotal;
+    int GridXTotal, GridY, GridZ;
     int IndenterSubdivisions; // array dimensions for indenter force
     double DomainDimensionX;    // physical size of the simulation domain in x-direction
 
@@ -93,7 +94,7 @@ public:
     void ComputeLame();
     void ComputeCamClayParams();
     void ComputeHelperVariables();
-    void SetPhi(double phi) {std::tan(phi*pi/180.);};
+    void SetPhi(double phi) {DP_tan_phi = std::tan(phi*pi/180.);};
 
 
     double PointsPerCell() {return nPtsTotal/(Volume/(cellsize*cellsize*cellsize));}
@@ -102,6 +103,7 @@ public:
 
     // grid cell from point's coordinates
     int CellIdx(float x) { return (int)(x*cellsize_inv+0.5); }
+    void Printout();
 };
 
 #endif

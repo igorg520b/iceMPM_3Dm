@@ -63,9 +63,9 @@ bool Model3D::Step()
         max_points_transferred = std::max((int)max_points_transferred, (int)p.max_pts_sent);
         max_pt_deviation = std::max(max_pt_deviation, p.max_pt_deviation);
     }
-    spdlog::info("finished {} ({}); host pts {}; cap {}; max_tr {}; max_dev {}; ptf {}", prms.SimulationStep,
-                 prms.AnimationFrameNumber(), gpu.hssoa.size, gpu.hssoa.capacity, max_points_transferred,
-                    max_pt_deviation, prms.PointTransferFrequency);
+    spdlog::info("finished {} ({}); host pts {}; cap-pts {}; max_tr {}; max_dev {}; ptf {}; t {:>6.3}; f {:>7.0}", prms.SimulationStep,
+                 prms.AnimationFrameNumber(), gpu.hssoa.size, gpu.hssoa.capacity-gpu.hssoa.size, max_points_transferred,
+                    max_pt_deviation, prms.PointTransferFrequency,prms.SimulationTime,gpu.indenter_force.norm());
 
     spdlog::get("indenter_force")->info("{},{},{},{}",prms.SimulationTime,gpu.indenter_force.norm(),gpu.indenter_force.x(), gpu.indenter_force.y());
 
