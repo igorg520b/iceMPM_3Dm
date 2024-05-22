@@ -38,9 +38,10 @@ int main(int argc, char** argv)
         ("b,bgeo", "Export as BGEO", cxxopts::value<bool>())
         ("p,paraview", "Export for Paraview", cxxopts::value<bool>())
         ("i,intact", "Export points for Paraview, only intact material", cxxopts::value<bool>())
+        ("m,damaged", "Export for Paraview damaged material only", cxxopts::value<bool>())
         ;
 
-//    options.parse_positional({"directory"});
+    options.parse_positional({"directory"});
     auto option_parse_result = options.parse(argc, argv);
 
     std::string frames_directory = option_parse_result["directory"].as<std::string>();
@@ -48,6 +49,7 @@ int main(int argc, char** argv)
     bool export_bgeo = option_parse_result.count("bgeo");
     bool export_paraview = option_parse_result.count("paraview");
     bool export_intact = option_parse_result.count("intact");
+    bool export_damaged = option_parse_result.count("damaged");
     int endframe = option_parse_result["endframe"].as<int>();
     int startframe = option_parse_result["startframe"].as<int>();
     int count_threads = option_parse_result["threads"].as<int>();
@@ -58,6 +60,7 @@ int main(int argc, char** argv)
     std::filesystem::path od1(std::string(Converter::directory_output) + "/" + std::string(Converter::directory_bgeo));
     std::filesystem::path od2(std::string(Converter::directory_output) + "/" + std::string(Converter::directory_points));
     std::filesystem::path od2b(std::string(Converter::directory_output) + "/" + std::string(Converter::directory_points_intact));
+    std::filesystem::path od2c(std::string(Converter::directory_output) + "/" + std::string(Converter::directory_points_damaged));
     std::filesystem::path od3(std::string(Converter::directory_output) + "/" + std::string(Converter::directory_indenter));
     std::filesystem::path od3b(std::string(Converter::directory_output) + "/" + std::string(Converter::directory_indenter_hdf5));
     std::filesystem::path od4(std::string(Converter::directory_output) + "/" + std::string(Converter::directory_sensor));
@@ -65,6 +68,7 @@ int main(int argc, char** argv)
     if(!std::filesystem::is_directory(od1) || !std::filesystem::exists(od1)) std::filesystem::create_directory(od1);
     if(!std::filesystem::is_directory(od2) || !std::filesystem::exists(od2)) std::filesystem::create_directory(od2);
     if(!std::filesystem::is_directory(od2b) || !std::filesystem::exists(od2b)) std::filesystem::create_directory(od2b);
+    if(!std::filesystem::is_directory(od2c) || !std::filesystem::exists(od2c)) std::filesystem::create_directory(od2c);
     if(!std::filesystem::is_directory(od3) || !std::filesystem::exists(od3)) std::filesystem::create_directory(od3);
     if(!std::filesystem::is_directory(od3b) || !std::filesystem::exists(od3b)) std::filesystem::create_directory(od3b);
     if(!std::filesystem::is_directory(od4) || !std::filesystem::exists(od4)) std::filesystem::create_directory(od4);
@@ -113,7 +117,7 @@ int main(int argc, char** argv)
         int remaining = std::min(endframe-i+1, block_size);
         spdlog::info("thread {}; processing frames {} to {}", omp_get_thread_num(), i, i+remaining);
         Converter c;
-        c.process_subset(i, remaining, frames_directory, export_bgeo, export_paraview, export_intact);
+        c.process_subset(i, remaining, frames_directory, export_bgeo, export_paraview, export_intact, export_damaged);
     }
 
     file.close();
