@@ -66,6 +66,7 @@ __device__ Eigen::Matrix3d KirchhoffStress_Wolper(const Eigen::Matrix3d &F);
 
 
 __device__ void ComputePQ(Point3D  &p, const double &kappa, const double &mu);
+__device__ void ComputeSVD(Point3D  &p, const double &kappa, const double &mu);
 __device__ void GetParametersForGrain(short grain, double &pmin, double &pmax, double &qmax, double &beta, double &mSq, double &pmin2);
 
 __device__ Eigen::Vector3d dev_d(Eigen::Vector3d Adiag);

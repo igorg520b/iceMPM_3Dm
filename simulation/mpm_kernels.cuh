@@ -284,10 +284,14 @@ __global__ void partition_kernel_g2p(const bool recordPQ, const bool enablePoint
     p.pos += p.velocity * dt;
     p.Fe = (Matrix3d::Identity() + dt*p.Bp) * p.Fe;     // p.Bp is the gradient of the velocity vector (it seems)
 
-    ComputePQ(p, kappa, mu);    // pre-computes USV, p, q, etc.
+    ComputePQ(p, kappa, mu);    // pre-compute p, q
 
     if(!(p.utility_data & status_crushed)) CheckIfPointIsInsideFailureSurface(p);
-    if(p.utility_data & status_crushed) Wolper_Drucker_Prager(p);
+    if(p.utility_data & status_crushed)
+    {
+        ComputeSVD(p, kappa, mu);
+        Wolper_Drucker_Prager(p);
+    }
 
     // distribute the values of p back into GPU memory: pos, velocity, BP, Fe, Jp_inv, PQ
     for(int i=0; i<SimParams3D::dim; i++)
@@ -408,8 +412,6 @@ __device__ void GetParametersForGrain(short grain, double &pmin, double &pmax, d
 //    double NACC_M = (2*qmax*sqrt(1+2*beta))/(pmax-pmin);
 //    mSq = NACC_M*NACC_M;
     mSq = (4*qmax*qmax*(1+2*beta))/((pmax-pmin)*(pmax-pmin));
-
-//    mSq = (4*qmax*qmax*(1+2*beta))/((pmax*(1+beta))*(pmax*(1+beta)));
 }
 
 
@@ -439,16 +441,20 @@ __device__ void CheckIfPointIsInsideFailureSurface(Point3D &p)
 
 __device__ void ComputePQ(Point3D &p, const double &kappa, const double &mu)
 {
+    Matrix3d &F = p.Fe;
+    p.Je_tr = F.determinant();
+    double Jsq = p.Je_tr * p.Je_tr;
+    p.p_tr = -(0.5*kappa)*(Jsq-1.);
+    p.q_tr = coeff1*mu*rcbrt(Jsq)*dev(F*F.transpose()).norm(); //mu * pow(Je_tr,-2./d)* dev(SigmaSquared);
+}
 
+__device__ void ComputeSVD(Point3D &p, const double &kappa, const double &mu)
+{
     svd3x3(p.Fe, p.U, p.vSigma, p.V);
-    p.Je_tr = p.vSigma.prod();         // product of elements of vSigma (representation of diagonal matrix)
-    p.p_tr = -(kappa/2.) * (p.Je_tr*p.Je_tr - 1.);
     p.vSigmaSquared = p.vSigma.array().square().matrix();
     const double Je_tr_sq = p.Je_tr*p.Je_tr;
     p.v_s_hat_tr = mu*rcbrt(Je_tr_sq) * dev_d(p.vSigmaSquared); //mu * pow(Je_tr,-2./d)* dev(SigmaSquared);
-    p.q_tr = coeff1*p.v_s_hat_tr.norm();
 }
-
 
 __device__ void Wolper_Drucker_Prager(Point3D &p)
 {
@@ -467,7 +473,7 @@ __device__ void Wolper_Drucker_Prager(Point3D &p)
         double p_new = -DP_threshold_p;
         double Je_new = sqrt(-2.*p_new/kappa + 1.);
         double cbrt_Je_new = cbrt(Je_new);
-        Vector3d vSigma_new = Vector3d::Constant(1.)*cbrt_Je_new; // pow(Je_new, 1./(double)d);
+        Vector3d vSigma_new(cbrt_Je_new,cbrt_Je_new,cbrt_Je_new);// = Vector3d::Constant(1.)*cbrt_Je_new; // pow(Je_new, 1./(double)d);
         p.Fe = p.U*vSigma_new.asDiagonal()*p.V.transpose();
         p.Jp_inv *= Je_new/p.Je_tr;
     }
@@ -511,7 +517,8 @@ __device__ Matrix3d KirchhoffStress_Wolper(const Matrix3d &F)
     // Kirchhoff stress as per Wolper (2019)
     double Je = F.determinant();
     Matrix3d b = F*F.transpose();
-    Matrix3d PFt = mu*pow(Je, -2./SimParams3D::dim)*dev(b) + kappa*0.5*(Je*Je-1.)*Matrix3d::Identity();
+//    Matrix3d PFt = mu*pow(Je, -2./SimParams3D::dim)*dev(b) + kappa*0.5*(Je*Je-1.)*Matrix3d::Identity();
+    Matrix3d PFt = mu*rcbrt(Je*Je)*dev(b) + kappa*0.5*(Je*Je-1.)*Matrix3d::Identity();
     return PFt;
 }
 
