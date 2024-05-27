@@ -39,6 +39,7 @@ int main(int argc, char** argv)
         ("p,paraview", "Export for Paraview", cxxopts::value<bool>())
         ("i,intact", "Export points for Paraview, only intact material", cxxopts::value<bool>())
         ("m,damaged", "Export for Paraview damaged material only", cxxopts::value<bool>())
+        ("a,all", "Sets options 'paraview', 'intact', and 'damaged'", cxxopts::value<bool>())
         ;
 
     options.parse_positional({"directory"});
@@ -50,6 +51,8 @@ int main(int argc, char** argv)
     bool export_paraview = option_parse_result.count("paraview");
     bool export_intact = option_parse_result.count("intact");
     bool export_damaged = option_parse_result.count("damaged");
+    bool export_all = option_parse_result.count("all");
+    if(export_all) export_paraview = export_intact = export_damaged = true;
     int endframe = option_parse_result["endframe"].as<int>();
     int startframe = option_parse_result["startframe"].as<int>();
     int count_threads = option_parse_result["threads"].as<int>();

@@ -72,7 +72,7 @@ MainWindow::MainWindow(QWidget *parent)
 // anything that includes the Model
     renderer->AddActor(representation.actor_points);
     renderer->AddActor(representation.actor_indenter);
-    renderer->AddActor(representation.actor_axes);
+//    renderer->AddActor(representation.actor_axes);
     renderer->AddActor(representation.actor_grid);
 /*    renderer->AddActor(representation.actor_partitions);
     renderer->AddActor(representation.actorText);
