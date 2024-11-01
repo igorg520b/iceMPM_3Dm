@@ -109,6 +109,20 @@ VisualRepresentation::VisualRepresentation()
     actor_partitions->GetProperty()->SetRepresentationToWireframe();
     actor_partitions->GetProperty()->SetLineWidth(2);
 
+    // bounding box
+    boundingBox_mapper->SetInputData(boundingBoxGrid);
+
+    actor_boundingBox->SetMapper(boundingBox_mapper);
+    actor_boundingBox->GetProperty()->SetEdgeVisibility(true);
+    actor_boundingBox->GetProperty()->LightingOff();
+    actor_boundingBox->GetProperty()->ShadingOff();
+    actor_boundingBox->GetProperty()->SetInterpolationToFlat();
+    actor_boundingBox->PickableOff();
+    actor_boundingBox->GetProperty()->SetColor(0.1,0.1,0.1);
+    actor_boundingBox->GetProperty()->SetRepresentationToWireframe();
+
+
+
     // scalar bar
     scalarBar->SetLookupTable(lutMPM);
     scalarBar->SetMaximumWidthInPixels(130);
@@ -164,6 +178,25 @@ void VisualRepresentation::SynchronizeTopology()
             grid_points->SetPoint((vtkIdType)(idx_x+idx_z*gx), pt_pos);
         }
     structuredGrid->SetPoints(grid_points);
+
+    // bounding box
+    boundingBox_points->SetNumberOfPoints(8);
+    double x = model->prms.GridXTotal * model->prms.cellsize;
+    double y = model->prms.GridY * model->prms.cellsize;
+    double z = model->prms.GridZ * model->prms.cellsize;
+    boundingBox_points->SetPoint(0, 0., 0., 0.);
+    boundingBox_points->SetPoint(1, 0., y, 0.);
+    boundingBox_points->SetPoint(2, x, 0., 0.);
+    boundingBox_points->SetPoint(3, x, y, 0.);
+    boundingBox_points->SetPoint(4, 0., 0., z);
+    boundingBox_points->SetPoint(5, 0., y, z);
+    boundingBox_points->SetPoint(6, x, 0., z);
+    boundingBox_points->SetPoint(7, x, y, z);
+
+    boundingBoxGrid->SetDimensions(2,2,2);
+    boundingBoxGrid->SetPoints(boundingBox_points);
+
+
 /*
     int nPartitions = model->gpu.partitions.size();
     partitionsGrid->SetDimensions(nPartitions+1, 2, 1);
@@ -239,6 +272,8 @@ void VisualRepresentation::SynchronizeValues()
             uint8_t partition = s->getPartition();
             bool isCrushed = s->getCrushedStatus();
             if(isCrushed) partition = 41;
+            bool isLiquid = s->getLiquidStatus();
+            if(isLiquid) partition = 42;
             visualized_values->SetValue((vtkIdType)activePtsCount++, (float)partition);
         }
         if(activePtsCount != model->prms.nPtsTotal) throw std::runtime_error("SynchronizeValues() point count mismatch");
@@ -303,6 +338,9 @@ void VisualRepresentation::SynchronizeValues()
             uint16_t grain = s->getGrain()%40;
             bool isCrushed = s->getCrushedStatus();
             if(isCrushed) grain = 41;
+            bool isLiquid = s->getLiquidStatus();
+            if(!isLiquid) grain = 42;
+
             visualized_values->SetValue((vtkIdType)activePtsCount++, (float)grain);
         }
         if(activePtsCount != model->prms.nPtsTotal) throw std::runtime_error("SynchronizeValues() point count mismatch");

@@ -12,6 +12,7 @@ constexpr double coeff1 = 1.224744871391589; // sqrt((6-d)/2.);
 constexpr double coeff1_inv = 0.8164965809277260;
 constexpr long long status_crushed = 0x10000;
 constexpr long long status_disabled = 0x20000;
+constexpr long long status_liquid = 0x40000;
 
 __device__ uint8_t gpu_error_indicator;
 __constant__ SimParams3D gprms;
@@ -29,7 +30,10 @@ __global__ void partition_kernel_p2g(const int gridX, const int gridX_offset, co
 
     const double &h = gprms.cellsize;
     const double &h_inv = gprms.cellsize_inv;
-    const double &particle_mass = gprms.ParticleMass;
+    const int isLiquid = (int)((utility_data & status_liquid)>>18);
+    double particle_masses[2] {gprms.ParticleMass,gprms.LiquidParticleMass};
+    const double particle_mass = particle_masses[isLiquid];
+
     const int &gridY = gprms.GridY;
     const int &gridZ = gprms.GridZ;
     const int &halo = gprms.GridHaloSize;
@@ -50,7 +54,12 @@ __global__ void partition_kernel_p2g(const int gridX, const int gridX_offset, co
         }
     }
 
-    Matrix3d PFt = KirchhoffStress_Wolper(Fe);
+    // todo: distinguish between solid ice and fluid material
+    Matrix3d PFt;
+    if(isLiquid)
+        PFt = Water(buffer_pts[pt_idx + pitch_pts*SimParams3D::idx_Jp_inv]);
+    else PFt = KirchhoffStress_Wolper(Fe);
+
     Matrix3d subterm2 = particle_mass*Bp - (gprms.dt_vol_Dpinv)*PFt;
 
     Eigen::Vector3i base_coord_i = (pos*h_inv - Vector3d::Constant(0.5)).cast<int>(); // coords of base grid node for point
@@ -161,47 +170,61 @@ __global__ void partition_kernel_update_nodes(const Eigen::Vector2d indCenter,
     velocity[1] -= gprms.dt_Gravity;
     if(velocity.squaredNorm() > vmax_squared) velocity = velocity.normalized()*vmax;
 
-
-    // indenter
-    Vector2d gnpos2d(gnpos.x(), gnpos.y());    // position of the grid node
-    Vector2d n = gnpos2d - indCenter;    // vector pointing at the node from indenter's center
-
-    if(n.squaredNorm() < indRsq)
+    if(gprms.SetupType != 2)
     {
-        // grid node is inside the indenter
-        Vector3d vrel = velocity - vco;
-        n.normalize();
-        Vector3d n3d(n[0],n[1],0);
-        double vn = vrel.dot(n3d);   // normal component of the velocity
-        if(vn < 0)
+        // indenter
+        Vector2d gnpos2d(gnpos.x(), gnpos.y());    // position of the grid node
+        Vector2d n = gnpos2d - indCenter;    // vector pointing at the node from indenter's center
+
+        if(n.squaredNorm() < indRsq)
         {
-            Vector3d vt = vrel - n3d*vn;   // tangential portion of relative velocity
-            Vector3d prev_velocity = velocity;
-            velocity = vco + vt;
+            // grid node is inside the indenter
+            Vector3d vrel = velocity - vco;
+            n.normalize();
+            Vector3d n3d(n[0],n[1],0);
+            double vn = vrel.dot(n3d);   // normal component of the velocity
+            if(vn < 0)
+            {
+                Vector3d vt = vrel - n3d*vn;   // tangential portion of relative velocity
+                Vector3d prev_velocity = velocity;
+                velocity = vco + vt;
 
-            // force on the indenter
-            Vector3d force = (prev_velocity-velocity)*mass/dt;
-            float angle = atan2f((float)n[0],(float)n[1]);
-            angle += SimParams3D::pi;
-            angle *= gprms.IndenterSubdivisions/(2*SimParams3D::pi);
+                // force on the indenter
+                Vector3d force = (prev_velocity-velocity)*mass/dt;
+                float angle = atan2f((float)n[0],(float)n[1]);
+                angle += SimParams3D::pi;
+                angle *= gprms.IndenterSubdivisions/(2*SimParams3D::pi);
 
-            int index_angle = min(max((int)angle, 0), gprms.IndenterSubdivisions-1);
-            int index_z = min(max(idx_z,0),gridZ-1);
-            int index = index_z + index_angle*gridZ;
+                int index_angle = min(max((int)angle, 0), gprms.IndenterSubdivisions-1);
+                int index_z = min(max(idx_z,0),gridZ-1);
+                int index = index_z + index_angle*gridZ;
 
-            for(int i=0;i<SimParams3D::dim;i++) atomicAdd(&indenter_force_accumulator[i+SimParams3D::dim*index], force[i]);
+                for(int i=0;i<SimParams3D::dim;i++) atomicAdd(&indenter_force_accumulator[i+SimParams3D::dim*index], force[i]);
+            }
         }
     }
 
     // attached bottom layer
-    if(gi.y() <= 2) velocity.setZero();
-    else if(gi.y() >= gridY-4 && velocity.y()>0) velocity.y() = 0;
+    if(gprms.SetupType != 2)
+    {
+        if(gi.y() <= 2) velocity.setZero();
+    }
+    else
+    {
+        if(gi.y() <= 2 && velocity.y() <0) velocity.y() = 0;    // for water situation
+    }
+    if(gi.y() >= gridY-3 && velocity.y()>0) velocity.y() = 0;
     if(gi.x() <= 2 && velocity.x()<0) velocity.x() = 0;
-    else if(gi.x() >= gridXTotal-4 && velocity.x()>0) velocity.x() = 0;
+    else if(gi.x() >= gridXTotal-3 && velocity.x()>0) velocity.x() = 0;
     if(gi.z() <= 2 && velocity.z()<0) velocity.z() = 0;
-    else if(gi.z() >= gridZ-4 && velocity.z()>0) velocity.z() = 0;
+    else if(gi.z() >= gridZ-3 && velocity.z()>0) velocity.z() = 0;
 
-    // side boundary conditions would go here
+    // drag if needed (especially for creating the initial settled water)
+    if(gprms.SetupType == 2 && gprms.DragGlobal != 0)
+    {
+        velocity *= (1-gprms.DragGlobal);
+    }
+
 
     // write the updated grid velocity back to memory
     for(int i=0;i<SimParams3D::dim;i++)
@@ -228,6 +251,7 @@ __global__ void partition_kernel_g2p(const bool recordPQ, const bool enablePoint
     long long* ptr = reinterpret_cast<long long*>(&buffer_pts[pt_idx + pitch_pts*SimParams3D::idx_utility_data]);
     p.utility_data = *ptr;
     if(p.utility_data & status_disabled) return; // point is disabled
+    bool isLiquid = p.utility_data & status_liquid;
 
     const int &halo = gprms.GridHaloSize;
     const double &h_inv = gprms.cellsize_inv;
@@ -284,14 +308,25 @@ __global__ void partition_kernel_g2p(const bool recordPQ, const bool enablePoint
     p.pos += p.velocity * dt;
     p.Fe = (Matrix3d::Identity() + dt*p.Bp) * p.Fe;     // p.Bp is the gradient of the velocity vector (it seems)
 
-    ComputePQ(p, kappa, mu);    // pre-compute p, q
-
-    if(!(p.utility_data & status_crushed)) CheckIfPointIsInsideFailureSurface(p);
-    if(p.utility_data & status_crushed)
+    if(isLiquid)
     {
-        ComputeSVD(p, kappa, mu);
-        Wolper_Drucker_Prager(p);
+        // water model
+        p.Jp_inv *= (Matrix3d::Identity() + dt*p.Bp).determinant();  // for water model
     }
+    else
+    {
+        // solid
+        ComputePQ(p, kappa, mu);    // pre-compute p, q
+
+        if(!(p.utility_data & status_crushed)) CheckIfPointIsInsideFailureSurface(p);
+        if(p.utility_data & status_crushed)
+        {
+            ComputeSVD(p, kappa, mu);
+            Wolper_Drucker_Prager(p);
+        }
+    }
+
+
 
     // distribute the values of p back into GPU memory: pos, velocity, BP, Fe, Jp_inv, PQ
     for(int i=0; i<SimParams3D::dim; i++)
@@ -517,12 +552,27 @@ __device__ Matrix3d KirchhoffStress_Wolper(const Matrix3d &F)
     // Kirchhoff stress as per Wolper (2019)
     double Je = F.determinant();
     Matrix3d b = F*F.transpose();
-//    Matrix3d PFt = mu*pow(Je, -2./SimParams3D::dim)*dev(b) + kappa*0.5*(Je*Je-1.)*Matrix3d::Identity();
     Matrix3d PFt = mu*rcbrt(Je*Je)*dev(b) + kappa*0.5*(Je*Je-1.)*Matrix3d::Identity();
     return PFt;
 }
 
+__device__ Matrix3d Water(const double J)
+{
+    constexpr double gamma = 3;
+    const double &kappa = gprms.kappa;
 
+    Matrix3d PFt = kappa*( 1.-pow(J,-gamma))*Matrix3d::Identity();
+    return PFt;
+}
+
+
+__device__ Eigen::Matrix3d dev(Eigen::Matrix3d A)
+{
+    return A - A.trace()/3*Eigen::Matrix3d::Identity();
+}
+
+
+//    Matrix3d PFt = mu*pow(Je, -2./SimParams3D::dim)*dev(b) + kappa*0.5*(Je*Je-1.)*Matrix3d::Identity();
 // deviatoric part of a diagonal matrix
 
 __device__ Vector3d dev_d(Vector3d Adiag)
@@ -530,10 +580,6 @@ __device__ Vector3d dev_d(Vector3d Adiag)
     return Adiag - Adiag.sum()/3*Vector3d::Constant(1.);
 }
 
-__device__ Eigen::Matrix3d dev(Eigen::Matrix3d A)
-{
-    return A - A.trace()/3*Eigen::Matrix3d::Identity();
-}
 
 
 __device__ void svd3x3(const Eigen::Matrix3d &A, Eigen::Matrix3d &_U, Eigen::Vector3d &_S, Eigen::Matrix3d &_V)

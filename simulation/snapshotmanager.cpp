@@ -17,6 +17,102 @@ SnapshotManager::SnapshotManager()
     VisualPoint::InitializeStatic();
 }
 
+void SnapshotManager::LoadRawPoints(std::string fileName)
+{
+    if(!std::filesystem::exists(fileName)) throw std::runtime_error("error reading raw points file - no file 2");;
+    spdlog::info("reading raw points file {}",fileName);
+
+    H5::H5File file(fileName, H5F_ACC_RDONLY);
+
+    H5::DataSet dataset_grains = file.openDataSet("llGrainIDs");
+    hsize_t nPoints;
+    dataset_grains.getSpace().getSimpleExtentDims(&nPoints, NULL);
+    model->prms.nPtsTotal = nPoints;
+
+    // allocate space host-side
+    model->gpu.hssoa.Allocate(nPoints*(1+model->prms.ExtraSpaceForIncomingPoints));
+    model->gpu.hssoa.size = nPoints;
+
+    // read
+    file.openDataSet("x").read(model->gpu.hssoa.getPointerToLine(SimParams3D::posx), H5::PredType::NATIVE_DOUBLE);
+    file.openDataSet("y").read(model->gpu.hssoa.getPointerToLine(SimParams3D::posx+1), H5::PredType::NATIVE_DOUBLE);
+    file.openDataSet("z").read(model->gpu.hssoa.getPointerToLine(SimParams3D::posx+2), H5::PredType::NATIVE_DOUBLE);
+    dataset_grains.read(model->gpu.hssoa.host_buffer, H5::PredType::NATIVE_UINT64);
+
+    // read volume attribute
+    H5::Attribute att_volume = dataset_grains.openAttribute("volume");
+    att_volume.read(H5::PredType::NATIVE_DOUBLE, &model->prms.Volume);
+    file.close();
+
+    // get block dimensions
+    std::pair<Eigen::Vector3d, Eigen::Vector3d> boundaries = model->gpu.hssoa.getBlockDimensions();
+    model->prms.xmin = boundaries.first.x();
+    model->prms.ymin = boundaries.first.y();
+    model->prms.zmin = boundaries.first.z();
+    model->prms.xmax = boundaries.second.x();
+    model->prms.ymax = boundaries.second.y();
+    model->prms.zmax = boundaries.second.z();
+
+    const double &h = model->prms.cellsize;
+    const double box_x = model->prms.GridXTotal*h;
+    const double box_z = model->prms.GridZ*h;
+    const double length = model->prms.xmax - model->prms.xmin;
+    const double width = model->prms.zmax - model->prms.zmin;
+    const double x_offset = (box_x - length)/2;
+    const double y_offset = 2*h - model->prms.ymin;
+    const double z_offset = (box_z - width)/2;
+
+    Eigen::Vector3d offset(x_offset, y_offset, z_offset);
+    if(model->prms.SetupType == 2)
+    {
+        Eigen::Vector3d cutout(model->prms.BlockCutout[0],model->prms.BlockCutout[1],model->prms.BlockCutout[2]);
+        Eigen::Vector3d cutoutCenter = (boundaries.first + boundaries.second)*0.5;
+        cutoutCenter.y() = boundaries.second.y()-cutout.y()/2;
+        // mark the region that will be a solid (ice)
+        model->gpu.hssoa.MarkSolidAndLiquid(cutout, cutoutCenter);
+    }
+
+    model->gpu.hssoa.offsetBlock(offset);
+
+
+    model->gpu.hssoa.RemoveDisabledAndSort(model->prms.cellsize_inv, model->prms.GridY, model->prms.GridZ);
+    model->gpu.hssoa.InitializeBlock();
+
+    // set indenter starting position
+    const double block_left = x_offset;
+    const double block_top = model->prms.ymax + y_offset;
+
+    const double r = model->prms.IndDiameter/2;
+    const double ht = r - model->prms.IndDepth;
+    const double x_ind_offset = sqrt(r*r - ht*ht);
+
+    model->prms.indenter_x = floor((block_left-x_ind_offset)/h)*h;
+    if(model->prms.SetupType == 0)
+        model->prms.indenter_y = block_top + ht;
+    else if(model->prms.SetupType == 1)
+        model->prms.indenter_y = ceil(block_top/h)*h;
+
+    model->prms.indenter_x_initial = model->prms.indenter_x;
+    model->prms.indenter_y_initial = model->prms.indenter_y;
+
+    // particle volume and mass
+    model->prms.ParticleVolume = model->prms.Volume/nPoints;
+    model->prms.ComputeHelperVariables();
+
+    // allocate GPU partitions
+    model->gpu.initialize();
+    model->gpu.split_hssoa_into_partitions();
+    model->gpu.allocate_arrays();
+    model->gpu.transfer_ponts_to_device();
+
+    model->Reset();
+    model->Prepare();
+
+    previous_frame_exists = false;
+    spdlog::info("LoadRawPoints done; nPoitns {}; lxw: ({} x {})",nPoints,length,width);
+}
+
+
 void SnapshotManager::SaveFrame(std::string outputDirectory, const int frame)
 {
     // populate saved_frame
@@ -244,91 +340,7 @@ void SnapshotManager::SaveSnapshot(std::string outputDirectory, const int frame,
 }
 
 
-void SnapshotManager::LoadRawPoints(std::string fileName)
-{
-    spdlog::info("reading raw points file {}",fileName);
-    if(!std::filesystem::exists(fileName)) throw std::runtime_error("error reading raw points file - no file");;
 
-    H5::H5File file(fileName, H5F_ACC_RDONLY);
-
-    H5::DataSet dataset_grains = file.openDataSet("llGrainIDs");
-    hsize_t nPoints;
-    dataset_grains.getSpace().getSimpleExtentDims(&nPoints, NULL);
-    model->prms.nPtsTotal = nPoints;
-
-    // allocate space host-side
-    model->gpu.hssoa.Allocate(nPoints*(1+model->prms.ExtraSpaceForIncomingPoints));
-    model->gpu.hssoa.size = nPoints;
-
-    // read
-    file.openDataSet("x").read(model->gpu.hssoa.getPointerToLine(SimParams3D::posx), H5::PredType::NATIVE_DOUBLE);
-    file.openDataSet("y").read(model->gpu.hssoa.getPointerToLine(SimParams3D::posx+1), H5::PredType::NATIVE_DOUBLE);
-    file.openDataSet("z").read(model->gpu.hssoa.getPointerToLine(SimParams3D::posx+2), H5::PredType::NATIVE_DOUBLE);
-    dataset_grains.read(model->gpu.hssoa.host_buffer, H5::PredType::NATIVE_UINT64);
-
-    // read volume attribute
-    H5::Attribute att_volume = dataset_grains.openAttribute("volume");
-    att_volume.read(H5::PredType::NATIVE_DOUBLE, &model->prms.Volume);
-    file.close();
-
-    // get block dimensions
-    std::pair<Eigen::Vector3d, Eigen::Vector3d> boundaries = model->gpu.hssoa.getBlockDimensions();
-    model->prms.xmin = boundaries.first.x();
-    model->prms.ymin = boundaries.first.y();
-    model->prms.zmin = boundaries.first.z();
-    model->prms.xmax = boundaries.second.x();
-    model->prms.ymax = boundaries.second.y();
-    model->prms.zmax = boundaries.second.z();
-
-
-    const double &h = model->prms.cellsize;
-    const double box_x = model->prms.GridXTotal*h;
-    const double box_z = model->prms.GridZ*h;
-    const double length = model->prms.xmax - model->prms.xmin;
-    const double width = model->prms.zmax - model->prms.zmin;
-    const double x_offset = (box_x - length)/2;
-    const double y_offset = 2*h;
-    const double z_offset = (box_z - width)/2;
-
-    Eigen::Vector3d offset(x_offset, y_offset, z_offset);
-    model->gpu.hssoa.offsetBlock(offset);
-    model->gpu.hssoa.RemoveDisabledAndSort(model->prms.cellsize_inv, model->prms.GridY, model->prms.GridZ);
-    model->gpu.hssoa.InitializeBlock();
-
-    // set indenter starting position
-    const double block_left = x_offset;
-    const double block_top = model->prms.ymax + y_offset;
-
-    const double r = model->prms.IndDiameter/2;
-    const double ht = r - model->prms.IndDepth;
-    const double x_ind_offset = sqrt(r*r - ht*ht);
-
-    model->prms.indenter_x = floor((block_left-x_ind_offset)/h)*h;
-    if(model->prms.SetupType == 0)
-        model->prms.indenter_y = block_top + ht;
-    else if(model->prms.SetupType == 1)
-        model->prms.indenter_y = ceil(block_top/h)*h;
-
-    model->prms.indenter_x_initial = model->prms.indenter_x;
-    model->prms.indenter_y_initial = model->prms.indenter_y;
-
-    // particle volume and mass
-    model->prms.ParticleVolume = model->prms.Volume/nPoints;
-    model->prms.ParticleMass = model->prms.ParticleVolume * model->prms.Density;
-    model->prms.ComputeHelperVariables();
-
-    // allocate GPU partitions
-    model->gpu.initialize();
-    model->gpu.split_hssoa_into_partitions();
-    model->gpu.allocate_arrays();
-    model->gpu.transfer_ponts_to_device();
-
-    model->Reset();
-    model->Prepare();
-
-    previous_frame_exists = false;
-    spdlog::info("LoadRawPoints done; nPoitns {}",nPoints);
-}
 
 
 void SnapshotManager::ReadSnapshot(std::string fileName, int partitions)

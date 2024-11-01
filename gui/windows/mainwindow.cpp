@@ -61,7 +61,7 @@ MainWindow::MainWindow(QWidget *parent)
     const int status_width = 80;
     sp.setHorizontalPolicy(QSizePolicy::Fixed);
     labelStepCount->setSizePolicy(sp);
-    labelStepCount->setFixedWidth(status_width);
+    labelStepCount->setFixedWidth(status_width*1.5);
     labelElapsedTime->setSizePolicy(sp);
     labelElapsedTime->setFixedWidth(status_width);
 
@@ -78,6 +78,9 @@ MainWindow::MainWindow(QWidget *parent)
     renderer->AddActor(representation.actorText);
     renderer->AddActor(representation.scalarBar);
 */
+    renderer->AddActor(representation.actor_boundingBox);
+    renderer->AddActor(representation.actor_wavePusher);
+    representation.actor_wavePusher->VisibilityOff();
 
     // populate combobox
     QMetaEnum qme = QMetaEnum::fromType<VisualRepresentation::VisOpt>();
@@ -263,13 +266,20 @@ void MainWindow::load_parameter_triggered()
 
 void MainWindow::LoadParameterFile(QString qFileName)
 {
-    std::string pointCloudFile = model.prms.ParseFile(qFileName.toStdString());
-    snapshot.LoadRawPoints(pointCloudFile);
+    std::string rawPointFile = model.prms.ParseFile(qFileName.toStdString());
+    snapshot.LoadRawPoints(rawPointFile);
     this->qLastParameterFile = qFileName;
     this->setWindowTitle(qLastParameterFile);
     model.Reset();
     representation.SynchronizeTopology();
     pbrowser->setActiveObject(params);
+
+    if(model.prms.SetupType == 2)
+    {
+        representation.actor_wavePusher->VisibilityOn();
+        representation.actor_indenter->VisibilityOff();
+    }
+
     updateGUI();
 }
 
@@ -293,7 +303,9 @@ void MainWindow::simulation_data_ready()
 
 void MainWindow::updateGUI()
 {
-    labelStepCount->setText(QString::number(model.prms.SimulationStep));
+    int snapshot_number = model.prms.AnimationFrameNumber();
+    int step = model.prms.SimulationStep;
+    labelStepCount->setText(QString("%1 (%2)").arg(step, 7, 10, QChar('0')).arg(snapshot_number, 4, 10, QChar('0')));
     labelElapsedTime->setText(QString("%1 s").arg(model.prms.SimulationTime,0,'f',3));
     //statusLabel->setText(QString("per cycle: %1 ms").arg(model.compute_time_per_cycle,0,'f',3));
 

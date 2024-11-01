@@ -20,7 +20,9 @@ void SimParams3D::Reset()
 
     PoissonsRatio = 0.3;
     Gravity = 9.81;
-    Density = 980;
+    Density = 916;
+    WaterDensity = 1000;
+    DragGlobal = 0;
 
     IndDiameter = 0.324;
     IndVelocity = 0.2;
@@ -62,6 +64,10 @@ void SimParams3D::Reset()
 
 void SimParams3D::ComputeHelperVariables()
 {
+    ParticleMass = ParticleVolume * Density;
+    LiquidParticleMass = ParticleVolume * WaterDensity;
+
+
     UpdateEveryNthStep = (int)(1.f/(200*InitialTimeStep));
     cellsize = DomainDimensionX/GridXTotal;
     cellsize_inv = 1./cellsize;
@@ -94,6 +100,20 @@ std::string SimParams3D::ParseFile(std::string fileName)
     rapidjson::Document doc;
     doc.Parse(strConfigFile.data());
     if(!doc.IsObject()) throw std::runtime_error("configuration file is not JSON");
+
+    if(doc.HasMember("SetupType")) SetupType = doc["SetupType"].GetInt();
+    if(!doc.HasMember("InputRawPoints"))
+    {
+        spdlog::critical("InputRawPoints entry is missing in JSON config file");
+        throw std::runtime_error("config parameter missing");
+    }
+    std::string rawPointFile = doc["InputRawPoints"].GetString();
+
+    if(doc.HasMember("BlockCutout"))
+    {
+        for(int i=0;i<3;i++) BlockCutout[i] = doc["BlockCutout"][i].GetDouble();
+        spdlog::info("BlockCutout: {} {} {}", BlockCutout[0], BlockCutout[1], BlockCutout[2]);
+    }
 
     if(doc.HasMember("InitialTimeStep")) InitialTimeStep = doc["InitialTimeStep"].GetDouble();
     if(doc.HasMember("YoungsModulus")) YoungsModulus = doc["YoungsModulus"].GetDouble();
@@ -135,16 +155,10 @@ std::string SimParams3D::ParseFile(std::string fileName)
     ComputeCamClayParams();
     ComputeHelperVariables();
 
-    if(!doc.HasMember("InputRawPoints"))
-    {
-        spdlog::critical("InputRawPoints entry is missing in JSON config file");
-        throw std::runtime_error("config parameter missing");
-    }
-
-    std::string result = doc["InputRawPoints"].GetString();
-    spdlog::info("Loaded parameters; grid [{} x {} x {}] pointFile {}",GridXTotal, GridY, GridZ, result);
+    spdlog::info("Loaded parameters; grid [{} x {} x {}] pointFile {}",GridXTotal, GridY, GridZ, rawPointFile);
     spdlog::info("DP_threshold_p {}", DP_threshold_p);
-    return result;
+
+    return rawPointFile;
 }
 
 void SimParams3D::ComputeLame()
@@ -390,6 +404,7 @@ void SimParams3D::ReadParametersFromAttributes(H5::DataSet &ds)
 void SimParams3D::Printout()
 {
     spdlog::info("printing simulation parameters:");
+    spdlog::info("SetupType {}",SetupType);
     spdlog::info("nPtsTotal {}",nPtsTotal);
     spdlog::info("grid {}x{}x{}",GridXTotal, GridY, GridZ);
     spdlog::info("IndenterSubdivisions {}",IndenterSubdivisions);
@@ -405,33 +420,5 @@ void SimParams3D::Printout()
     spdlog::info("GrainVariability {}",GrainVariability);
     spdlog::info("IndDiameter {}, IndRSq {}, IndVelocity {}, IndDepth {}",IndDiameter, IndRSq, IndVelocity, IndDepth);
     spdlog::info("ParticleVolume {}; ParticleMass {}; ParticleViewSize {}", ParticleVolume, ParticleMass, ParticleViewSize);
-//    spdlog::info("{}",);
     spdlog::info("dt_vol_Dpinv {}, dt_Gravity {}, vmax {}, vmax_squared {}",dt_vol_Dpinv, dt_Gravity, vmax, vmax_squared);
-
-
-/*
-    double ParticleVolume, ParticleMass, ParticleViewSize;
-
-    double indenter_x, indenter_x_initial, indenter_y, indenter_y_initial;
-    double Volume;  // total volume (area) of the object
-
-    // multi-GPU params
-    int nPartitions; // number of partitions (ideally, one partition per device)
-    int GridHaloSize;  // number of grid slices (perpendicular to the x-axis) for "halo" transfers
-    int PointTransferFrequency; // n times per full cycle
-    int VectorCapacity_transfer;   // vector capacity for points that fly to another partition
-    double ExtraSpaceForIncomingPoints;     // percentage of points per partition
-    double PointsTransferBufferFraction;    // space for points that can "fly over" per simulation step
-    double RebalanceThresholdFreeSpaceRemaining;     // % of the total space
-    double RebalanceThresholdDisabledPercentage;
-
-    // computed parameters/properties
-    double dt_vol_Dpinv, dt_Gravity, vmax, vmax_squared;
-    int gbOffset;
-    double cellsize_inv, Dp_inv;
-    int tpb_P2G, tpb_Upd, tpb_G2P;  // threads per block for each operation
-    double animation_threshold_pos;
-
-*/
-
 }

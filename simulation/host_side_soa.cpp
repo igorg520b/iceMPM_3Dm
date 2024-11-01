@@ -30,6 +30,29 @@ void HostSideSOA::offsetBlock(Eigen::Vector3d offset)
     }
 }
 
+void HostSideSOA::MarkSolidAndLiquid(Eigen::Vector3d blockDimensions, Eigen::Vector3d blockCenter)
+{
+    int count = 0;
+    Eigen::Vector3d from = blockCenter - 0.5*blockDimensions;
+    Eigen::Vector3d to = blockCenter + 0.5*blockDimensions;
+
+    for(SOAIterator it = begin(); it!=end(); ++it)
+    {
+        ProxyPoint3D &p = *it;
+        Eigen::Vector3d pos = p.getPos();
+        if(pos.x() < from.x()) { p.setLiquidStatus(true); continue; }
+        if(pos.y() < from.y()) { p.setLiquidStatus(true); continue; }
+        if(pos.z() < from.z()) { p.setLiquidStatus(true); continue; }
+        if(pos.x() > to.x()) { p.setLiquidStatus(true); continue; }
+        if(pos.y() > to.y()) { p.setLiquidStatus(true); continue; }
+        if(pos.z() > to.z()) { p.setLiquidStatus(true); continue; }
+        count++;
+    }
+    spdlog::info("MarkSolidAndLiquid from [{},{},{}] to [{},{},{}]; marked {} pts",
+                 from[0],from[1],from[2], to[0],to[1],to[2],count);
+}
+
+
 void HostSideSOA::RemoveDisabledAndSort(double hinv, int GridY, int GridZ)
 {
     spdlog::info("RemoveDisabledAndSort; nPtsArrays {}", SimParams3D::nPtsArrays);

@@ -131,6 +131,23 @@ bool ProxyPoint3D::getDisabledStatus()
     return (val & 0x20000ll) == 0x20000ll;
 }
 
+bool ProxyPoint3D::getLiquidStatus()
+{
+    double dval = getValue(SimParams3D::idx_utility_data);
+    long long val = *reinterpret_cast<long long*>(&dval);
+    return (val & 0x40000ll);
+}
+
+void ProxyPoint3D::setLiquidStatus(bool setval)
+{
+    double dval = getValue(SimParams3D::idx_utility_data);
+    long long val = *reinterpret_cast<long long*>(&dval);
+    if(setval) val |= 0x40000ll;
+    else val &= ~0x40000ll;
+    setValue(SimParams3D::idx_utility_data, *reinterpret_cast<double*>(&val));
+}
+
+
 uint16_t ProxyPoint3D::getGrain()
 {
     double dval = getValue(SimParams3D::idx_utility_data);

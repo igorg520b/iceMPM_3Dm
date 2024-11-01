@@ -22,6 +22,8 @@ struct ProxyPoint3D
     Eigen::Vector3d getVelocity() const;
     bool getCrushedStatus();
     bool getDisabledStatus();
+    bool getLiquidStatus();
+    void setLiquidStatus(bool val);
     uint16_t getGrain();
     int getCellIndex(double hinv, int GridY, int GridZ);  // index of the grid cell at the point's location
     int getXIndex(double hinv) const;                     // x-index of the grid cell

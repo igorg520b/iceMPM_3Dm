@@ -62,9 +62,11 @@ public:
     vtkNew<vtkActor> actor_grid;
     vtkNew<vtkActor> actor_partitions;
     vtkNew<vtkActor> actor_indenter;
+    vtkNew<vtkActor> actor_boundingBox;
+    vtkNew<vtkActor> actor_wavePusher;
+
     vtkNew<vtkScalarBarActor> scalarBar;
     vtkNew<vtkAxesActor> actor_axes;
-
     vtkNew<vtkTextActor> actorText;
 
 private:
@@ -93,6 +95,13 @@ private:
     vtkNew<vtkStructuredGrid> partitionsGrid;
     vtkNew<vtkDataSetMapper> partitions_grid_mapper;
     vtkNew<vtkPoints> partitions_grid_points;
+
+    // bounding box
+    vtkNew<vtkStructuredGrid> boundingBoxGrid;
+    vtkNew<vtkDataSetMapper> boundingBox_mapper;
+    vtkNew<vtkPoints> boundingBox_points;
+
+    // wave-making wedge
 
     static constexpr float lutArrayMPMColors[101][3] =
     {{0.25098, 0.556863, 0.756863}, {0.245961, 0.547294,
@@ -176,7 +185,7 @@ private:
          {0.856449, 0.426459, 0.218019}, {0.850862, 0.397993, 0.204584},
          {0.845274, 0.369528, 0.19115}};
 
-    static constexpr float lutArrayPastel[42][3] = {
+    static constexpr float lutArrayPastel[43][3] = {
         {196/255.0,226/255.0,252/255.0}, // 0
         {136/255.0,119/255.0,187/255.0},
         {190/255.0,125/255.0,183/255.0},
@@ -218,7 +227,8 @@ private:
         {165/255.0,222/255.0,141/255.0},  // 38
         {244/255.0,154/255.0,154/255.0},   // 39
         {0.1,0.1,0.8},      // 40
-        {0.8, 0.1, 0.1}     // 41
+        {0.8, 0.1, 0.1},     // 41
+        {0.3, 0.3, 0.6}     // 42
     };
 };
 #endif

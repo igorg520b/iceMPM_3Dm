@@ -66,6 +66,7 @@ public:
 
     std::pair<Eigen::Vector3d, Eigen::Vector3d> getBlockDimensions();
     void offsetBlock(Eigen::Vector3d offset);
+    void MarkSolidAndLiquid(Eigen::Vector3d blockDimensions, Eigen::Vector3d blockCenter);
 };
 
 #endif // HOSTSIDESOA_H

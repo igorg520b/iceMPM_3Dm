@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
 #include <filesystem>
 #include <fstream>
 
@@ -36,7 +37,7 @@ public:
     constexpr static size_t Bp00 = Fe00+9;
     constexpr static size_t nPtsArrays = Bp00 + 9;
 
-    int SetupType;  // 0 - ice block horizontal indentation; 1 - cone uniaxial compression
+    int SetupType;  // 0 - ice block horizontal indentation; 1 - cone uniaxial compression; 2 - wave-ice tank
 
     int nPtsTotal;
     int GridXTotal, GridY, GridZ;
@@ -50,7 +51,8 @@ public:
     int SimulationStep;
 
     // material properties
-    double Gravity, Density, PoissonsRatio, YoungsModulus;
+    double Gravity, Density, WaterDensity, PoissonsRatio, YoungsModulus;
+    double DragGlobal;
     double lambda, mu, kappa; // Lame
 
     double IceCompressiveStrength, IceTensileStrength, IceShearStrength, IceTensileStrength2;
@@ -63,8 +65,9 @@ public:
 
     double cellsize;
     double xmin, xmax, ymin, ymax, zmin, zmax;            // bounding box of the material
+    double BlockCutout[3]; // size of the block to turn into floating ice
 
-    double ParticleVolume, ParticleMass, ParticleViewSize;
+    double ParticleVolume, ParticleMass, ParticleViewSize, LiquidParticleMass;
 
     double indenter_x, indenter_x_initial, indenter_y, indenter_y_initial;
     double Volume;  // total volume (area) of the object

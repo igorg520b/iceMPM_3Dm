@@ -63,7 +63,7 @@ __device__ void PreparePointForTransfer(const int pt_idx, const int index_in_tra
 __device__ void Wolper_Drucker_Prager(Point3D &p);
 __device__ void CheckIfPointIsInsideFailureSurface(Point3D &p);
 __device__ Eigen::Matrix3d KirchhoffStress_Wolper(const Eigen::Matrix3d &F);
-
+__device__ Eigen::Matrix3d Water(const double J);
 
 __device__ void ComputePQ(Point3D  &p, const double &kappa, const double &mu);
 __device__ void ComputeSVD(Point3D  &p, const double &kappa, const double &mu);

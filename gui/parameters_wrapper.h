@@ -30,14 +30,19 @@ class ParamsWrapper : public QObject
 
     Q_PROPERTY(double p_YoungsModulus READ getYoungsModulus WRITE setYoungsModulus NOTIFY propertyChanged)
     double getYoungsModulus() {return prms->YoungsModulus;}
-    void setYoungsModulus(double val) { prms->YoungsModulus = (float)val; prms->ComputeLame(); }
+    void setYoungsModulus(double val) { prms->YoungsModulus = val; prms->ComputeLame(); }
 
     Q_PROPERTY(QString p_YM READ getYM NOTIFY propertyChanged)
     QString getYM() {return QString("%1 Pa").arg(prms->YoungsModulus, 0, 'e', 2);}
 
     Q_PROPERTY(double p_PoissonsRatio READ getPoissonsRatio WRITE setPoissonsRatio NOTIFY propertyChanged)
     double getPoissonsRatio() {return prms->PoissonsRatio;}
-    void setPoissonsRatio(double val) { prms->PoissonsRatio = (float)val; prms->ComputeLame(); }
+    void setPoissonsRatio(double val) { prms->PoissonsRatio = val; prms->ComputeLame(); }
+
+    Q_PROPERTY(double p_DragGlobal READ getDragGlobal WRITE setDragGlobal NOTIFY propertyChanged)
+    double getDragGlobal() {return prms->DragGlobal;}
+    void setDragGlobal(double val) { prms->DragGlobal = val; }
+
 
     Q_PROPERTY(double p_LameLambda READ getLambda NOTIFY propertyChanged)
     double getLambda() {return prms->lambda;}
